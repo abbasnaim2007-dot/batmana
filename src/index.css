@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@900&family=Tajawal:wght@800&family=Playfair+Display:wght@700&family=Poppins:wght@200&family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;900&family=Tajawal:wght@800&family=Playfair+Display:wght@700&family=Poppins:wght@200&family=Bebas+Neue&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -97,21 +97,51 @@
 /* Falling Batman logos */
 @keyframes batman-fall {
   0% {
-    transform: translateY(-100px) rotate(0deg);
+    top: -10vh;
+    transform: rotate(0deg);
+    opacity: 0.12;
+  }
+  10% {
+    opacity: 0.15;
+  }
+  90% {
+    opacity: 0.15;
   }
   100% {
-    transform: translateY(110vh) rotate(360deg);
+    top: 110vh;
+    transform: rotate(360deg);
+    opacity: 0;
   }
 }
 
-@keyframes gentle-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+@keyframes gentle-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
 }
 
 @keyframes text-glow {
-  0%, 100% { text-shadow: 0 2px 8px rgba(255, 19, 240, 0.3); }
-  50% { text-shadow: 0 2px 12px rgba(255, 19, 240, 0.5); }
+  0%, 100% { text-shadow: 0 2px 6px rgba(255, 19, 240, 0.2); }
+  50% { text-shadow: 0 2px 12px rgba(255, 19, 240, 0.45); }
+}
+
+@keyframes button-entrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(20px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0px);
+  }
+}
+
+@keyframes button-glow-pulse {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(255, 19, 240, 0.6), 0 4px 16px rgba(255, 19, 240, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(255, 19, 240, 0.9), 0 6px 24px rgba(255, 19, 240, 0.6);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
