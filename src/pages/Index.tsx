@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import batmanLogo from "@/assets/batman-logo.png";
-import pookieBatman from "@/assets/pookie_batman.jfif";
+import pookieBatman from "@/assets/pookie_batman.jpg";
 
 // Generate 18 falling logo configs with randomized properties
 const fallingLogos = Array.from({ length: 18 }, (_, i) => ({
@@ -26,7 +26,10 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="fixed inset-0 overflow-hidden bg-background">
+    <div
+      className="fixed inset-0 overflow-hidden"
+      style={{ backgroundColor: "#F8F9FA" }}
+    >
       {/* Falling Batman logos */}
       {fallingLogos.map((logo) => (
         <img
@@ -44,44 +47,63 @@ const Index = () => {
         />
       ))}
 
-      {/* Hook Card — visible in portrait */}
+      {/* Hook Card — portrait orientation */}
       <div
-        className="fixed inset-0 z-10 flex items-center justify-center transition-opacity duration-[600ms]"
-        style={{ opacity: isPortrait ? 1 : 0, pointerEvents: isPortrait ? "auto" : "none" }}
+        style={{
+          position: "fixed",
+          top: "50%",
+          left: "50%",
+          transform: "translate(-50%, -50%)",
+          width: "min(340px, 90vw)",
+          padding: "36px 28px",
+          background: "rgba(255, 255, 255, 0.4)",
+          backdropFilter: "blur(25px)",
+          WebkitBackdropFilter: "blur(25px)",
+          border: "3px solid #FF13F0",
+          borderRadius: "24px",
+          boxShadow: "0 20px 50px rgba(255, 19, 240, 0.2)",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "24px",
+          zIndex: 100,
+          opacity: isPortrait ? 1 : 0,
+          pointerEvents: isPortrait ? "auto" : "none",
+          transition: "opacity 600ms ease",
+        }}
       >
-        <div
-          className="mx-4 w-[320px] rounded-[24px] border-[3px] border-primary p-8 text-center"
+        <img
+          src={pookieBatman}
+          alt="Batmana"
           style={{
-            background: "var(--glass-bg)",
-            backdropFilter: "var(--glass-blur)",
-            WebkitBackdropFilter: "var(--glass-blur)",
-            boxShadow: "var(--strong-shadow)",
+            width: "220px",
+            height: "220px",
+            objectFit: "cover",
+            border: "4px solid #FFC4FB",
+            borderRadius: "16px",
+            boxShadow: "0 8px 32px rgba(255, 196, 251, 0.4)",
+            animation: "gentle-pulse 2.5s ease-in-out infinite",
+          }}
+        />
+        <p
+          style={{
+            fontFamily: "'Cairo', 'Tajawal', sans-serif",
+            fontSize: "30px",
+            fontWeight: 900,
+            color: "#FF13F0",
+            textShadow: "0 2px 8px rgba(255, 19, 240, 0.3)",
+            direction: "rtl",
+            unicodeBidi: "embed",
+            textAlign: "center",
+            lineHeight: 1.6,
+            letterSpacing: "0.5px",
+            margin: 0,
+            padding: "0 12px",
+            animation: "text-glow 2.5s ease-in-out infinite",
           }}
         >
-          <img
-            src={pookieBatman}
-            alt="Batmana"
-            className="mx-auto mb-6 h-[200px] w-[200px] rounded-2xl border-4 border-accent object-cover"
-            style={{
-              boxShadow: "0 8px 32px hsla(300, 100%, 87%, 0.4)",
-              animation: "gentle-pulse 2s ease-in-out infinite",
-            }}
-          />
-          <p
-            dir="rtl"
-            className="text-primary"
-            style={{
-              fontFamily: "'Cairo', sans-serif",
-              fontSize: "28px",
-              fontWeight: 800,
-              lineHeight: 1.6,
-              letterSpacing: "0.5px",
-              animation: "text-pulse 2s ease-in-out infinite",
-            }}
-          >
-            بالله يا باتمانه اقلبي تلفونك
-          </p>
-        </div>
+          بالله يا باتمانه اقلبي تلفونك
+        </p>
       </div>
     </div>
   );

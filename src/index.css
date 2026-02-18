@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@800&family=Playfair+Display:wght@700&family=Poppins:wght@200&family=Bebas+Neue&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@900&family=Tajawal:wght@800&family=Playfair+Display:wght@700&family=Poppins:wght@200&family=Bebas+Neue&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -37,10 +37,10 @@
     --radius: 0.5rem;
 
     --soft-shadow: 0 8px 32px hsla(302, 100%, 53%, 0.15);
-    --strong-shadow: 0 12px 48px hsla(302, 100%, 53%, 0.3);
+    --strong-shadow: 0 20px 50px rgba(255, 19, 240, 0.2);
     --neon-glow: 0 0 20px hsla(302, 100%, 53%, 0.6);
-    --glass-bg: rgba(255, 255, 255, 0.15);
-    --glass-blur: blur(20px);
+    --glass-bg: rgba(255, 255, 255, 0.4);
+    --glass-blur: blur(25px);
 
     --sidebar-background: 0 0% 98%;
     --sidebar-foreground: 240 5.3% 26.1%;
@@ -109,9 +109,9 @@
   50% { transform: scale(1.05); }
 }
 
-@keyframes text-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.02); }
+@keyframes text-glow {
+  0%, 100% { text-shadow: 0 2px 8px rgba(255, 19, 240, 0.3); }
+  50% { text-shadow: 0 2px 12px rgba(255, 19, 240, 0.5); }
 }
 
 @media (prefers-reduced-motion: reduce) {
