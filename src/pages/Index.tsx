@@ -130,11 +130,11 @@ const Index = () => {
           background: "#FF13F0",
           border: "2px solid #FFFFFF",
           borderRadius: "12px",
-          fontFamily: "'Cairo', sans-serif",
-          fontSize: "22px",
-          fontWeight: 600,
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: "28px",
+          fontWeight: 400,
           color: "#FFFFFF",
-          letterSpacing: "1px",
+          letterSpacing: "2px",
           cursor: "pointer",
           position: "relative",
           zIndex: 10,
@@ -151,7 +151,7 @@ const Index = () => {
           transition: "opacity 400ms ease",
         }}
       >
-        ابدأ
+        START
       </button>
     </div>
   );
