@@ -124,6 +124,7 @@ const Index = () => {
 
       {/* Start button — landscape only */}
       <button
+        className="start-btn"
         onClick={handleStart}
         style={{
           padding: "12px 36px",
@@ -155,6 +156,9 @@ const Index = () => {
       >
         START
       </button>
+
+      {/* Pink gradient — gives backdrop-filter something visible to blur */}
+      <div className="hook-gradient" />
     </div>
   );
 };
