@@ -1,163 +1,191 @@
 
-## Glassmorphism Button — Definitive Fix
+## Section 1 — Three Precision Enhancements
 
-### What's Actually Wrong
+### Overview
 
-After reading the current code carefully, there are three real problems:
-
-1. **`button-glow-pulse` keyframe has the wrong values** — lines 138-145 of `src/index.css` still use the old heavy fuchsia shadow (`0 0 20px rgba(255,19,240,0.6), 0 4px 16px rgba(255,19,240,0.4)` → `0 0 30px rgba(255,19,240,0.9)`). These override the inline `boxShadow` during the animation, making the button look like a solid-glow neon pill instead of soft glass.
-
-2. **No `:hover` / `:active` states** — inline React styles cannot respond to mouse/touch pseudo-states. The button has no tactile feedback at all right now.
-
-3. **Nothing visually distinct behind the button** — the Ghost White background (`#F8F9FA`) is nearly identical to `rgba(255,255,255,0.6)`. The Batman logos (opacity 0.12–0.15) are too faint to give the blur something to act on. A subtle radial gradient layer placed behind the button area solves this without changing the visual design.
-
-The image `user-uploads://image_8a825b-4.jpg` (Batman with pink bows, darker animated style) is also copied in to update the portrait photo.
+Three isolated changes to `src/pages/Index.tsx` and `src/index.css`. No new files. No Section 2 work. Every existing behavior is preserved.
 
 ---
 
-### Files Changed — Exact Scope
+### Enhancement 1: Global Fullscreen Button
 
-**3 files, no new files created:**
+**What it does:** A small `⛶` icon fixed to the bottom-right corner. It auto-hides after 3 seconds of inactivity and reappears on any touch/mouse/keyboard event. Hides completely while the browser is in fullscreen mode.
 
----
+**Implementation approach:** Since this is a React component (not a plain HTML page), all logic goes into `Index.tsx` using React hooks — no raw DOM querySelector. The fullscreen button is a new `<button>` JSX element placed inside the root `<div>`, rendered independently of the Section 1 layout.
 
-### 1. `src/assets/pookie_batman.jpg` — Replace image
+**`src/pages/Index.tsx` changes:**
 
-Copy `user-uploads://image_8a825b-4.jpg` over the existing asset file. This updates the Batman portrait shown in the floating image on Section 1.
-
----
-
-### 2. `src/index.css` — Two targeted edits
-
-**Edit A — Fix `button-glow-pulse` keyframes (lines 138–145)**
-
-Replace the current heavy-glow values with soft glass-compatible values:
-
-```
-FROM:
-@keyframes button-glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 20px rgba(255, 19, 240, 0.6), 0 4px 16px rgba(255, 19, 240, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 30px rgba(255, 19, 240, 0.9), 0 6px 24px rgba(255, 19, 240, 0.6);
-  }
-}
-
-TO:
-@keyframes button-glow-pulse {
-  0%, 100% {
-    box-shadow: 0 0 15px rgba(255, 19, 240, 0.3);
-  }
-  50% {
-    box-shadow: 0 0 22px rgba(255, 19, 240, 0.45);
-  }
-}
-```
-
-**Edit B — Add `.start-btn` CSS class + `.hook-gradient` helper div class**
-
-Appended after the `@media (prefers-reduced-motion)` block at the bottom of the file. This class gives the button `:hover`, `:active`, and `:focus-visible` states that are impossible with inline styles alone:
-
-```css
-/* Glassmorphism START button */
-.start-btn {
-  background: rgba(255, 255, 255, 0.25) !important;
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.7) !important;
-  border-radius: 999px !important;
-  box-shadow: 0 0 15px rgba(255, 19, 240, 0.3);
-  transition: background 0.25s ease, box-shadow 0.25s ease,
-              transform 0.15s ease, border-color 0.25s ease;
-  will-change: transform, box-shadow;
-}
-
-.start-btn:hover {
-  background: rgba(255, 255, 255, 0.4) !important;
-  border-color: rgba(255, 255, 255, 0.95) !important;
-  box-shadow: 0 0 25px rgba(255, 19, 240, 0.5), 0 4px 12px rgba(255, 19, 240, 0.2);
-  transform: translateY(-2px);
-}
-
-.start-btn:active {
-  background: rgba(255, 255, 255, 0.45) !important;
-  transform: scale(0.96);
-  box-shadow: 0 0 30px rgba(255, 19, 240, 0.7), 0 2px 8px rgba(255, 19, 240, 0.3);
-  transition-duration: 0.1s;
-}
-
-.start-btn:focus-visible {
-  outline: none;
-  box-shadow: 0 0 20px rgba(255, 19, 240, 0.5), 0 0 0 3px rgba(255, 19, 240, 0.2);
-}
-
-@supports not (backdrop-filter: blur(20px)) {
-  .start-btn {
-    background: rgba(255, 255, 255, 0.82) !important;
-  }
-}
-
-/* Gradient behind button — gives backdrop-filter something to blur */
-.hook-gradient {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  height: 220px;
-  background: linear-gradient(
-    to top,
-    rgba(255, 196, 251, 0.2) 0%,
-    rgba(255, 19, 240, 0.07) 50%,
-    transparent 100%
-  );
-  pointer-events: none;
-  z-index: 5;
-}
-```
-
-Why `!important` on `background`, `border`, and `border-radius`: The `.start-btn` class needs to override the identical properties already set on the element as inline styles. Inline styles in React always have the highest specificity — `!important` on the class is the correct, minimal way to override them without removing the inline styles entirely (which carry the orientation-toggle `opacity` and `pointerEvents` logic we must preserve).
-
----
-
-### 3. `src/pages/Index.tsx` — Two targeted edits
-
-**Edit A — Add `className="start-btn"` to the button (line 126)**
+- Add `useRef`, `useCallback` to imports
+- Add two new state values: `isFullscreenBtnVisible` (boolean, starts `true`) and a ref `hideTimerRef` for the auto-hide timeout
+- Add `useEffect` that:
+  - Runs on mount, starts 3-second hide timer
+  - Attaches `touchstart`, `mousemove`, `click`, `keydown` listeners that reset the timer
+  - Attaches `fullscreenchange` / `webkitfullscreenchange` listeners to track real fullscreen state
+  - Cleans up all listeners on unmount
+- Add `toggleFullscreen()` handler that calls `document.documentElement.requestFullscreen()` / `exitFullscreen()` with webkit fallbacks
+- Add JSX at the bottom of the root div:
 
 ```tsx
 <button
-  className="start-btn"
-  onClick={handleStart}
-  style={{ /* all existing inline styles unchanged */ }}
+  className="fullscreen-btn"
+  onClick={toggleFullscreen}
+  aria-label="Toggle fullscreen"
+  style={{
+    opacity: isFullscreenBtnVisible ? 1 : 0,
+    transform: isFullscreenBtnVisible ? "translateY(0)" : "translateY(15px)",
+    pointerEvents: isFullscreenBtnVisible ? "auto" : "none",
+  }}
 >
-  START
+  ⛶
 </button>
 ```
 
-The existing inline styles stay exactly as-is. The class only adds pseudo-state behavior and overrides the few glass-relevant properties where the keyframe was fighting them.
+**`src/index.css` changes — add `.fullscreen-btn` class:**
 
-**Edit B — Add `<div className="hook-gradient" />` as last child of root div (after the button, line 157)**
+```css
+.fullscreen-btn {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 99999;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 12px;
+  font-size: 22px;
+  color: rgba(100, 100, 100, 0.6);
+  line-height: 1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: opacity 0.3s ease, transform 0.3s ease,
+              background 0.2s ease, box-shadow 0.2s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
 
-```tsx
-      </button>
+.fullscreen-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: rgba(100, 100, 100, 0.9);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
 
-      {/* Pink gradient — gives backdrop-filter something visible to blur */}
-      <div className="hook-gradient" />
-    </div>
+.fullscreen-btn:active {
+  transform: scale(0.96) !important;
+}
 ```
 
-This `div` sits at `z-index: 5`, between the falling logos (`z-index: 1`) and the button (`z-index: 10`). It creates a soft fuchsia bloom at the bottom of the screen that the button's `backdrop-filter: blur` will visibly act on.
+The `opacity` and `transform` are set via inline style on the element so the React state drives them, while the CSS class handles the hover/active pseudo-states.
 
 ---
 
-### Technical Summary
+### Enhancement 2: Batman Rain Velocity Fix
 
-| Problem | Fix |
+**The problem:** The current system hardcodes durations like `8s`, `10s`, etc. In landscape mode the viewport is shorter, so logos take the same 8–10 seconds to cross less vertical distance — making them appear faster visually. The fix: calculate duration from a constant velocity (150 px/s) and the actual viewport height.
+
+**Implementation approach:** Since logos are generated as a static `const` array outside the component, switch to a `useMemo` inside the component so the logo configs recalculate when `isPortrait` changes (which already tracks orientation). Each logo's `duration` is derived from:
+
+```
+totalDistance = vh * 1.2   (from -10vh to 110vh)
+duration = totalDistance / 150 px/s  ±15% variation
+```
+
+**`src/pages/Index.tsx` changes:**
+
+- Remove the static `fallingLogos` const at the top of the file
+- Add a `useMemo` inside the component that computes logo configs using `window.innerHeight` and the velocity formula — and re-runs when `isPortrait` changes
+
+```tsx
+const fallingLogos = useMemo(() => {
+  const vh = window.innerHeight;
+  const totalDistance = vh * 1.2; // -10vh to 110vh
+  const baseVelocity = 150; // px/s
+  return Array.from({ length: 18 }, (_, i) => ({
+    id: i,
+    left: `${(i * 17 + i * i * 3) % 100}%`,
+    duration: `${((totalDistance / baseVelocity) * (0.87 + (i % 7) * 0.04)).toFixed(2)}s`,
+    delay: `${(i * 0.31) % 5}s`,
+    scale: 0.5 + (i % 7) * 0.08,
+  }));
+}, [isPortrait]);
+```
+
+Note: The `useMemo` import is already in the file — no new import needed.
+
+---
+
+### Enhancement 3: START Button — Realistic Glassmorphism (Reference Image)
+
+**What the reference image shows:** A pill-shaped button with:
+- Very light, nearly white frosted glass body (not pink-glowing)
+- Grey/dark text (in our case, fuchsia text on the same glass body)
+- A visible top-edge white bevel highlight (inner shadow)
+- A soft grey drop shadow beneath for 3D depth
+- No neon colored glow at all
+
+**Changes needed:**
+
+**`src/index.css` — rewrite `.start-btn`:**
+
+- Replace `box-shadow: 0 0 15px rgba(255,19,240,0.3)` with the bevel+depth shadow system:
+  ```
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.12),
+    0 4px 12px rgba(0,0,0,0.08),
+    inset 0 2px 4px rgba(255,255,255,0.6),
+    inset 0 -1px 2px rgba(0,0,0,0.05);
+  ```
+- Change `backdrop-filter: blur(20px)` → `blur(12px)` (lighter blur so Batman logos are visible behind it)
+- Remove the pink neon from `:hover` and `:active` pseudo-states — replace with grey shadow enhancement and white bevel changes
+- Remove `button-glow-pulse` from the button animation (no more pulsing pink glow)
+
+**`src/pages/Index.tsx` — update button inline styles:**
+
+- Change `boxShadow` inline value to match the new bevel system (so it's correct on first render before CSS class kicks in)
+- Remove `button-glow-pulse` from the animation string — keep `button-entrance` only
+- Reduce `backdropFilter` / `WebkitBackdropFilter` from `blur(15px)` → `blur(12px)`
+
+Also update `button-glow-pulse` keyframe in `src/index.css` to use the grey bevel shadow (so it doesn't fight the new button style if it's still referenced anywhere):
+
+```css
+@keyframes button-glow-pulse {
+  0%, 100% {
+    box-shadow:
+      0 8px 24px rgba(0,0,0,0.12),
+      0 4px 12px rgba(0,0,0,0.08),
+      inset 0 2px 4px rgba(255,255,255,0.6),
+      inset 0 -1px 2px rgba(0,0,0,0.05);
+  }
+  50% {
+    box-shadow:
+      0 10px 28px rgba(0,0,0,0.15),
+      0 5px 14px rgba(0,0,0,0.1),
+      inset 0 2px 5px rgba(255,255,255,0.7),
+      inset 0 -1px 2px rgba(0,0,0,0.06);
+  }
+}
+```
+
+---
+
+### Files Changed
+
+| File | Changes |
 |---|---|
-| `button-glow-pulse` shadows too heavy, override glass look | Rewrite keyframe to soft 0.3→0.45 opacity values |
-| No `:hover`/`:active` on inline-styled button | Add `.start-btn` CSS class with pseudo-state rules |
-| Ghost White background = nothing for blur to act on | Add `.hook-gradient` div (pink bloom at bottom, z-index 5) |
-| `background !important` needed to beat inline style | Use `!important` on class — minimal surgical override |
-| Batman image outdated | Copy new `image_8a825b-4.jpg` to `src/assets/pookie_batman.jpg` |
+| `src/index.css` | Add `.fullscreen-btn` class; rewrite `.start-btn` box-shadow + blur; update `button-glow-pulse` keyframe; update `.start-btn` hover/active pseudo-states |
+| `src/pages/Index.tsx` | Add fullscreen state + logic + JSX; move `fallingLogos` into `useMemo`; update button inline `boxShadow`, `backdropFilter`, and `animation` |
 
-No changes to: orientation logic, entrance animation, text, font loading, falling logo system, or any other layout.
+No changes to: `index.html`, `App.tsx`, `tailwind.config.ts`, or any other file.
+
+---
+
+### Technical Notes
+
+- The fullscreen button's `opacity` + `transform` are driven by React state (inline style) so the 3-second timer works cleanly with React's re-render cycle — no `querySelector` needed
+- `useMemo` with `[isPortrait]` dependency correctly recalculates logo durations on each orientation change, which already triggers a state update via the existing `resize` / `orientationchange` listeners
+- Reducing blur from 20px → 12px lets the falling Batman logos be partially visible behind the glass, which actually makes the frosted effect more perceptible (the reference image shows a relatively light blur)
+- The inset shadow technique (`inset 0 2px 4px rgba(255,255,255,0.6)`) creates the top bevel highlight seen in the reference image — it simulates light hitting the top edge of the glass pill
