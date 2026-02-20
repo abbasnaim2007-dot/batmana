@@ -1,20 +1,15 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import batmanLogo from "@/assets/batman-logo.png";
 import pookieBatman from "@/assets/pookie_batman.jpg";
-
-// Generate 18 falling logo configs with randomized positions and timings
-const fallingLogos = Array.from({ length: 18 }, (_, i) => ({
-  id: i,
-  left: `${(i * 17 + i * i * 3) % 100}%`,
-  duration: `${8 + (i * 0.4) % 6}s`,
-  delay: `${(i * 0.31) % 5}s`,
-  scale: 0.5 + (i % 7) * 0.08,
-}));
 
 const Index = () => {
   const [isPortrait, setIsPortrait] = useState(true);
   const [isExiting, setIsExiting] = useState(false);
+  const [isFullscreenBtnVisible, setIsFullscreenBtnVisible] = useState(true);
+  const [isInFullscreen, setIsInFullscreen] = useState(false);
+  const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  // Orientation tracking
   useEffect(() => {
     const check = () => setIsPortrait(window.innerHeight > window.innerWidth);
     check();
@@ -25,6 +20,86 @@ const Index = () => {
       window.removeEventListener("orientationchange", check);
     };
   }, []);
+
+  // Fullscreen button auto-hide logic
+  const showFullscreenBtn = useCallback(() => {
+    if (isInFullscreen) return;
+    setIsFullscreenBtnVisible(true);
+    if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    hideTimerRef.current = setTimeout(() => {
+      setIsFullscreenBtnVisible(false);
+    }, 3000);
+  }, [isInFullscreen]);
+
+  useEffect(() => {
+    // Start initial 3-second hide timer
+    showFullscreenBtn();
+
+    const onActivity = () => showFullscreenBtn();
+    document.addEventListener("touchstart", onActivity, { passive: true });
+    document.addEventListener("mousemove", onActivity);
+    document.addEventListener("click", onActivity);
+    document.addEventListener("keydown", onActivity);
+
+    const onFullscreenChange = () => {
+      const inFS = !!(
+        document.fullscreenElement ||
+        (document as any).webkitFullscreenElement
+      );
+      setIsInFullscreen(inFS);
+      if (inFS) {
+        setIsFullscreenBtnVisible(false);
+        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+      } else {
+        // Show briefly after exiting fullscreen
+        setIsFullscreenBtnVisible(true);
+        hideTimerRef.current = setTimeout(() => setIsFullscreenBtnVisible(false), 3000);
+      }
+    };
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+
+    return () => {
+      document.removeEventListener("touchstart", onActivity);
+      document.removeEventListener("mousemove", onActivity);
+      document.removeEventListener("click", onActivity);
+      document.removeEventListener("keydown", onActivity);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+      document.removeEventListener("webkitfullscreenchange", onFullscreenChange);
+      if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
+    };
+  }, [showFullscreenBtn]);
+
+  const toggleFullscreen = useCallback(() => {
+    const elem = document.documentElement;
+    if (!document.fullscreenElement && !(document as any).webkitFullscreenElement) {
+      if (elem.requestFullscreen) {
+        elem.requestFullscreen();
+      } else if ((elem as any).webkitRequestFullscreen) {
+        (elem as any).webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
+    }
+  }, []);
+
+  // Velocity-based falling logo configs — recalculate on orientation change
+  const fallingLogos = useMemo(() => {
+    const vh = window.innerHeight;
+    const totalDistance = vh * 1.2; // -10vh to 110vh
+    const baseVelocity = 150; // px/s
+    return Array.from({ length: 18 }, (_, i) => ({
+      id: i,
+      left: `${(i * 17 + i * i * 3) % 100}%`,
+      duration: `${((totalDistance / baseVelocity) * (0.87 + (i % 7) * 0.04)).toFixed(2)}s`,
+      delay: `${(i * 0.31) % 5}s`,
+      scale: 0.5 + (i % 7) * 0.08,
+    }));
+  }, [isPortrait]);
 
   const handleStart = () => {
     setIsExiting(true);
@@ -122,17 +197,14 @@ const Index = () => {
         بالله يا باتمانه اقلبي تلفونك
       </p>
 
-      {/* Start button — landscape only */}
+      {/* START button — landscape only */}
       <button
         className="start-btn"
         onClick={handleStart}
         style={{
           padding: "12px 36px",
-          background: "rgba(255, 255, 255, 0.6)",
-          backdropFilter: "blur(15px)",
-          WebkitBackdropFilter: "blur(15px)",
-          border: "1px solid rgba(255, 255, 255, 0.8)",
-          borderRadius: "50px",
+          backdropFilter: "blur(12px)",
+          WebkitBackdropFilter: "blur(12px)",
           fontFamily: "'Open Sans', sans-serif",
           fontSize: "16px",
           fontWeight: 500,
@@ -147,8 +219,7 @@ const Index = () => {
           appearance: "none",
           animation: isPortrait
             ? "none"
-            : "button-entrance 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55), button-glow-pulse 3s ease-in-out 0.8s infinite",
-          boxShadow: "0 0 15px rgba(255, 19, 240, 0.3)",
+            : "button-entrance 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55)",
           opacity: isPortrait ? 0 : 1,
           pointerEvents: isPortrait ? "none" : "auto",
           transition: "opacity 400ms ease",
@@ -159,6 +230,22 @@ const Index = () => {
 
       {/* Pink gradient — gives backdrop-filter something visible to blur */}
       <div className="hook-gradient" />
+
+      {/* Fullscreen toggle button — global, auto-hides after 3s */}
+      {!isInFullscreen && (
+        <button
+          className="fullscreen-btn"
+          onClick={toggleFullscreen}
+          aria-label="Toggle fullscreen"
+          style={{
+            opacity: isFullscreenBtnVisible ? 1 : 0,
+            transform: isFullscreenBtnVisible ? "translateY(0)" : "translateY(15px)",
+            pointerEvents: isFullscreenBtnVisible ? "auto" : "none",
+          }}
+        >
+          ⛶
+        </button>
+      )}
     </div>
   );
 };
