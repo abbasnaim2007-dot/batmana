@@ -245,15 +245,22 @@
   width: 44px;
   height: 44px;
   padding: 0;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 12px;
   font-size: 22px;
-  color: rgba(100, 100, 100, 0.6);
+  color: rgba(100, 100, 100, 0.7);
   line-height: 1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.12),
+    0 3px 10px rgba(0, 0, 0, 0.08),
+    inset 0 2px 4px rgba(255, 255, 255, 0.6),
+    inset 0 -1px 2px rgba(0, 0, 0, 0.05);
   cursor: pointer;
   transition: opacity 0.3s ease, transform 0.3s ease,
               background 0.2s ease, box-shadow 0.2s ease, color 0.2s ease;
@@ -263,14 +270,43 @@
 }
 
 .fullscreen-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(100, 100, 100, 0.9);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.28);
+  border-color: rgba(255, 255, 255, 0.65);
+  color: rgba(100, 100, 100, 1);
+  box-shadow:
+    0 8px 28px rgba(0, 0, 0, 0.16),
+    0 4px 14px rgba(0, 0, 0, 0.1),
+    inset 0 2px 6px rgba(255, 255, 255, 0.7),
+    inset 0 -1px 3px rgba(0, 0, 0, 0.06);
+  transform: scale(1.08);
 }
 
 .fullscreen-btn:active {
-  transform: scale(0.96) !important;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  background: rgba(255, 255, 255, 0.35);
+  box-shadow:
+    0 3px 12px rgba(0, 0, 0, 0.1),
+    0 2px 6px rgba(0, 0, 0, 0.08),
+    inset 0 -2px 4px rgba(255, 255, 255, 0.5),
+    inset 0 2px 6px rgba(0, 0, 0, 0.1);
+  transform: scale(0.96) translateY(1px) !important;
+}
+
+.fullscreen-btn:focus-visible {
+  outline: none;
+  border-color: rgba(255, 19, 240, 0.35);
+  box-shadow:
+    0 6px 20px rgba(0, 0, 0, 0.12),
+    0 3px 10px rgba(0, 0, 0, 0.08),
+    inset 0 2px 4px rgba(255, 255, 255, 0.6),
+    0 0 0 3px rgba(255, 19, 240, 0.15);
+}
+
+.fullscreen-btn.in-fullscreen {
+  color: rgba(255, 19, 240, 0.8);
+}
+
+.fullscreen-btn.in-fullscreen:hover {
+  color: #FF13F0;
 }
 
 @media (max-width: 360px) {

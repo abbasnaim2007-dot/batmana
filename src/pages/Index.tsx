@@ -23,13 +23,12 @@ const Index = () => {
 
   // Fullscreen button auto-hide logic
   const showFullscreenBtn = useCallback(() => {
-    if (isInFullscreen) return;
     setIsFullscreenBtnVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
     hideTimerRef.current = setTimeout(() => {
       setIsFullscreenBtnVisible(false);
     }, 3000);
-  }, [isInFullscreen]);
+  }, []);
 
   useEffect(() => {
     // Start initial 3-second hide timer
@@ -47,14 +46,7 @@ const Index = () => {
         (document as any).webkitFullscreenElement
       );
       setIsInFullscreen(inFS);
-      if (inFS) {
-        setIsFullscreenBtnVisible(false);
-        if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-      } else {
-        // Show briefly after exiting fullscreen
-        setIsFullscreenBtnVisible(true);
-        hideTimerRef.current = setTimeout(() => setIsFullscreenBtnVisible(false), 3000);
-      }
+      showFullscreenBtn();
     };
     document.addEventListener("fullscreenchange", onFullscreenChange);
     document.addEventListener("webkitfullscreenchange", onFullscreenChange);
@@ -232,20 +224,18 @@ const Index = () => {
       <div className="hook-gradient" />
 
       {/* Fullscreen toggle button — global, auto-hides after 3s */}
-      {!isInFullscreen && (
-        <button
-          className="fullscreen-btn"
-          onClick={toggleFullscreen}
-          aria-label="Toggle fullscreen"
-          style={{
-            opacity: isFullscreenBtnVisible ? 1 : 0,
-            transform: isFullscreenBtnVisible ? "translateY(0)" : "translateY(15px)",
-            pointerEvents: isFullscreenBtnVisible ? "auto" : "none",
-          }}
-        >
-          ⛶
-        </button>
-      )}
+      <button
+        className={`fullscreen-btn${isInFullscreen ? " in-fullscreen" : ""}`}
+        onClick={toggleFullscreen}
+        aria-label={isInFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+        style={{
+          opacity: isFullscreenBtnVisible ? 1 : 0,
+          transform: isFullscreenBtnVisible ? "translateY(0)" : "translateY(15px)",
+          pointerEvents: isFullscreenBtnVisible ? "auto" : "none",
+        }}
+      >
+        {isInFullscreen ? "✕" : "⛶"}
+      </button>
     </div>
   );
 };
