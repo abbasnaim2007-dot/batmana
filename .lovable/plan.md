@@ -1,191 +1,84 @@
 
-## Section 1 — Three Precision Enhancements
+
+## Fullscreen Button — Toggle Functionality Update
 
 ### Overview
 
-Three isolated changes to `src/pages/Index.tsx` and `src/index.css`. No new files. No Section 2 work. Every existing behavior is preserved.
+Update the existing fullscreen button so it remains visible (and usable) while in fullscreen mode, toggles between expand/exit icons, and uses the same realistic glassmorphism styling as the START button.
 
 ---
 
-### Enhancement 1: Global Fullscreen Button
+### Changes
 
-**What it does:** A small `⛶` icon fixed to the bottom-right corner. It auto-hides after 3 seconds of inactivity and reappears on any touch/mouse/keyboard event. Hides completely while the browser is in fullscreen mode.
+**2 files modified, no new files.**
 
-**Implementation approach:** Since this is a React component (not a plain HTML page), all logic goes into `Index.tsx` using React hooks — no raw DOM querySelector. The fullscreen button is a new `<button>` JSX element placed inside the root `<div>`, rendered independently of the Section 1 layout.
+---
 
-**`src/pages/Index.tsx` changes:**
+### 1. `src/pages/Index.tsx`
 
-- Add `useRef`, `useCallback` to imports
-- Add two new state values: `isFullscreenBtnVisible` (boolean, starts `true`) and a ref `hideTimerRef` for the auto-hide timeout
-- Add `useEffect` that:
-  - Runs on mount, starts 3-second hide timer
-  - Attaches `touchstart`, `mousemove`, `click`, `keydown` listeners that reset the timer
-  - Attaches `fullscreenchange` / `webkitfullscreenchange` listeners to track real fullscreen state
-  - Cleans up all listeners on unmount
-- Add `toggleFullscreen()` handler that calls `document.documentElement.requestFullscreen()` / `exitFullscreen()` with webkit fallbacks
-- Add JSX at the bottom of the root div:
+**A. Fix `showFullscreenBtn` (line 26)** — Remove the early return `if (isInFullscreen) return;` so the auto-hide timer works in both normal and fullscreen modes.
+
+**B. Update `onFullscreenChange` handler (lines 50-52)** — Instead of hiding the button when entering fullscreen, show it briefly (with the 3-second auto-hide timer), same as when exiting.
+
+**C. Remove conditional rendering (line 235)** — Change `{!isInFullscreen && (` to always render the button. The button should be visible in fullscreen so users can exit.
+
+**D. Add icon toggle** — Show `⛶` when not in fullscreen, `✕` when in fullscreen. Change `aria-label` accordingly.
+
+**E. Add `in-fullscreen` class** — When `isInFullscreen` is true, append `"fullscreen-btn in-fullscreen"` as className so CSS can style the fuchsia icon tint.
+
+Final JSX:
 
 ```tsx
 <button
-  className="fullscreen-btn"
+  className={`fullscreen-btn${isInFullscreen ? " in-fullscreen" : ""}`}
   onClick={toggleFullscreen}
-  aria-label="Toggle fullscreen"
+  aria-label={isInFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
   style={{
     opacity: isFullscreenBtnVisible ? 1 : 0,
     transform: isFullscreenBtnVisible ? "translateY(0)" : "translateY(15px)",
     pointerEvents: isFullscreenBtnVisible ? "auto" : "none",
   }}
 >
-  ⛶
+  {isInFullscreen ? "✕" : "⛶"}
 </button>
 ```
 
-**`src/index.css` changes — add `.fullscreen-btn` class:**
+---
 
-```css
-.fullscreen-btn {
-  position: fixed;
-  bottom: 20px;
-  right: 20px;
-  z-index: 99999;
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 12px;
-  font-size: 22px;
-  color: rgba(100, 100, 100, 0.6);
-  line-height: 1;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  cursor: pointer;
-  transition: opacity 0.3s ease, transform 0.3s ease,
-              background 0.2s ease, box-shadow 0.2s ease;
-  -webkit-appearance: none;
-  appearance: none;
-  outline: none;
-}
+### 2. `src/index.css`
 
-.fullscreen-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: rgba(100, 100, 100, 0.9);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
-}
+**A. Update `.fullscreen-btn` base styles (lines 240-263)** — Replace with realistic glassmorphism matching the START button:
+- `background: rgba(255, 255, 255, 0.2)`
+- `backdrop-filter: blur(12px)`
+- `border: 1px solid rgba(255, 255, 255, 0.5)`
+- Bevel shadow system (grey drop shadow + white inset highlight)
+- Add `display: flex; justify-content: center; align-items: center;`
 
-.fullscreen-btn:active {
-  transform: scale(0.96) !important;
-}
-```
+**B. Update `.fullscreen-btn:hover` (lines 265-269)** — Enhanced bevel shadow on hover, with `transform: scale(1.08)`.
 
-The `opacity` and `transform` are set via inline style on the element so the React state drives them, while the CSS class handles the hover/active pseudo-states.
+**C. Update `.fullscreen-btn:active` (lines 271-274)** — Pressed-in shadow (inverted inset), `transform: scale(0.96) translateY(1px)`.
+
+**D. Add new rules:**
+- `.fullscreen-btn.in-fullscreen` — fuchsia icon color (`rgba(255, 19, 240, 0.8)`)
+- `.fullscreen-btn.in-fullscreen:hover` — stronger fuchsia on hover (`#FF13F0`)
+- `.fullscreen-btn:focus-visible` — focus ring with fuchsia border accent
 
 ---
 
-### Enhancement 2: Batman Rain Velocity Fix
+### What Changes Functionally
 
-**The problem:** The current system hardcodes durations like `8s`, `10s`, etc. In landscape mode the viewport is shorter, so logos take the same 8–10 seconds to cross less vertical distance — making them appear faster visually. The fix: calculate duration from a constant velocity (150 px/s) and the actual viewport height.
-
-**Implementation approach:** Since logos are generated as a static `const` array outside the component, switch to a `useMemo` inside the component so the logo configs recalculate when `isPortrait` changes (which already tracks orientation). Each logo's `duration` is derived from:
-
-```
-totalDistance = vh * 1.2   (from -10vh to 110vh)
-duration = totalDistance / 150 px/s  ±15% variation
-```
-
-**`src/pages/Index.tsx` changes:**
-
-- Remove the static `fallingLogos` const at the top of the file
-- Add a `useMemo` inside the component that computes logo configs using `window.innerHeight` and the velocity formula — and re-runs when `isPortrait` changes
-
-```tsx
-const fallingLogos = useMemo(() => {
-  const vh = window.innerHeight;
-  const totalDistance = vh * 1.2; // -10vh to 110vh
-  const baseVelocity = 150; // px/s
-  return Array.from({ length: 18 }, (_, i) => ({
-    id: i,
-    left: `${(i * 17 + i * i * 3) % 100}%`,
-    duration: `${((totalDistance / baseVelocity) * (0.87 + (i % 7) * 0.04)).toFixed(2)}s`,
-    delay: `${(i * 0.31) % 5}s`,
-    scale: 0.5 + (i % 7) * 0.08,
-  }));
-}, [isPortrait]);
-```
-
-Note: The `useMemo` import is already in the file — no new import needed.
-
----
-
-### Enhancement 3: START Button — Realistic Glassmorphism (Reference Image)
-
-**What the reference image shows:** A pill-shaped button with:
-- Very light, nearly white frosted glass body (not pink-glowing)
-- Grey/dark text (in our case, fuchsia text on the same glass body)
-- A visible top-edge white bevel highlight (inner shadow)
-- A soft grey drop shadow beneath for 3D depth
-- No neon colored glow at all
-
-**Changes needed:**
-
-**`src/index.css` — rewrite `.start-btn`:**
-
-- Replace `box-shadow: 0 0 15px rgba(255,19,240,0.3)` with the bevel+depth shadow system:
-  ```
-  box-shadow:
-    0 8px 24px rgba(0,0,0,0.12),
-    0 4px 12px rgba(0,0,0,0.08),
-    inset 0 2px 4px rgba(255,255,255,0.6),
-    inset 0 -1px 2px rgba(0,0,0,0.05);
-  ```
-- Change `backdrop-filter: blur(20px)` → `blur(12px)` (lighter blur so Batman logos are visible behind it)
-- Remove the pink neon from `:hover` and `:active` pseudo-states — replace with grey shadow enhancement and white bevel changes
-- Remove `button-glow-pulse` from the button animation (no more pulsing pink glow)
-
-**`src/pages/Index.tsx` — update button inline styles:**
-
-- Change `boxShadow` inline value to match the new bevel system (so it's correct on first render before CSS class kicks in)
-- Remove `button-glow-pulse` from the animation string — keep `button-entrance` only
-- Reduce `backdropFilter` / `WebkitBackdropFilter` from `blur(15px)` → `blur(12px)`
-
-Also update `button-glow-pulse` keyframe in `src/index.css` to use the grey bevel shadow (so it doesn't fight the new button style if it's still referenced anywhere):
-
-```css
-@keyframes button-glow-pulse {
-  0%, 100% {
-    box-shadow:
-      0 8px 24px rgba(0,0,0,0.12),
-      0 4px 12px rgba(0,0,0,0.08),
-      inset 0 2px 4px rgba(255,255,255,0.6),
-      inset 0 -1px 2px rgba(0,0,0,0.05);
-  }
-  50% {
-    box-shadow:
-      0 10px 28px rgba(0,0,0,0.15),
-      0 5px 14px rgba(0,0,0,0.1),
-      inset 0 2px 5px rgba(255,255,255,0.7),
-      inset 0 -1px 2px rgba(0,0,0,0.06);
-  }
-}
-```
-
----
-
-### Files Changed
-
-| File | Changes |
+| Before | After |
 |---|---|
-| `src/index.css` | Add `.fullscreen-btn` class; rewrite `.start-btn` box-shadow + blur; update `button-glow-pulse` keyframe; update `.start-btn` hover/active pseudo-states |
-| `src/pages/Index.tsx` | Add fullscreen state + logic + JSX; move `fallingLogos` into `useMemo`; update button inline `boxShadow`, `backdropFilter`, and `animation` |
+| Button hidden entirely in fullscreen | Button stays visible (auto-hides after 3s, reappears on interaction) |
+| No way to exit fullscreen via button | Click button again to exit fullscreen |
+| Single icon `⛶` always | `⛶` in normal mode, `✕` in fullscreen mode |
+| Grey icon always | Grey normally, fuchsia tint in fullscreen |
+| Simple flat shadow | Realistic bevel glassmorphism matching START button |
 
-No changes to: `index.html`, `App.tsx`, `tailwind.config.ts`, or any other file.
+### What Stays the Same
 
----
-
-### Technical Notes
-
-- The fullscreen button's `opacity` + `transform` are driven by React state (inline style) so the 3-second timer works cleanly with React's re-render cycle — no `querySelector` needed
-- `useMemo` with `[isPortrait]` dependency correctly recalculates logo durations on each orientation change, which already triggers a state update via the existing `resize` / `orientationchange` listeners
-- Reducing blur from 20px → 12px lets the falling Batman logos be partially visible behind the glass, which actually makes the frosted effect more perceptible (the reference image shows a relatively light blur)
-- The inset shadow technique (`inset 0 2px 4px rgba(255,255,255,0.6)`) creates the top bevel highlight seen in the reference image — it simulates light hitting the top edge of the glass pill
+- 3-second auto-hide timer
+- Reappear on touch/mouse/keyboard activity
+- Bottom-right fixed position
+- `toggleFullscreen()` logic (already supports both enter and exit)
+- Responsive sizing at 360px breakpoint
