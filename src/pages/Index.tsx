@@ -8,6 +8,14 @@ const Index = () => {
   const [isFullscreenBtnVisible, setIsFullscreenBtnVisible] = useState(true);
   const [isInFullscreen, setIsInFullscreen] = useState(false);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const popSoundRef = useRef<HTMLAudioElement | null>(null);
+
+  useEffect(() => {
+    const audio = new Audio("/sounds/mixkit-hard-pop-click-2364.wav");
+    audio.preload = "auto";
+    audio.load();
+    popSoundRef.current = audio;
+  }, []);
 
   // Orientation tracking
   useEffect(() => {
@@ -94,9 +102,13 @@ const Index = () => {
   }, [isPortrait]);
 
   const handleStart = () => {
+    if (popSoundRef.current) {
+      popSoundRef.current.currentTime = 0;
+      popSoundRef.current.play().catch(() => {});
+    }
     setIsExiting(true);
     setTimeout(() => {
-      console.log("startCountdown()"); // Section 2 hook
+      console.log("startCountdown()");
     }, 600);
   };
 
@@ -168,9 +180,9 @@ const Index = () => {
       {/* Arabic text — floats freely on background */}
       <p
         style={{
-          fontFamily: "'Cairo', sans-serif",
+          fontFamily: "'BatmanaMedium', 'Cairo', sans-serif",
           fontSize: "27px",
-          fontWeight: 400,
+          fontWeight: "normal",
           color: "#FF13F0",
           direction: "rtl",
           unicodeBidi: "embed",
@@ -186,7 +198,7 @@ const Index = () => {
           animation: "text-glow 3s ease-in-out infinite",
         }}
       >
-        بالله يا باتمانه اقلبي تلفونك
+        اقلبي تلفونك يا باتمانه
       </p>
 
       {/* START button — landscape only */}
