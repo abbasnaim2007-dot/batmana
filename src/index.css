@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'BatmanaMedium';
+  src: url('/fonts/The_Year_of_The_Camel_Medium.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;900&family=Tajawal:wght@800&family=Playfair+Display:wght@700&family=Poppins:wght@200&family=Bebas+Neue&display=swap');
 
 @tailwind base;
