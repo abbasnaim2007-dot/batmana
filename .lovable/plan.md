@@ -1,84 +1,95 @@
 
 
-## Fullscreen Button — Toggle Functionality Update
+## Section 1 — Final Precision Update
 
-### Overview
-
-Update the existing fullscreen button so it remains visible (and usable) while in fullscreen mode, toggles between expand/exit icons, and uses the same realistic glassmorphism styling as the START button.
+Three additions: custom font, updated Arabic text, and pop sound on START click. All previous enhancements preserved.
 
 ---
 
-### Changes
+### Files to Create (Asset Copies)
 
-**2 files modified, no new files.**
+1. **`public/fonts/The_Year_of_The_Camel_Medium.otf`** -- Copy from `user-uploads://The_Year_of_The_Camel_Medium.otf`
+2. **`public/sounds/mixkit-hard-pop-click-2364.wav`** -- Copy from `user-uploads://mixkit-hard-pop-click-2364.wav`
+
+Font goes in `public/fonts/` so CSS `@font-face` can reference it via `/fonts/...`. Audio goes in `public/sounds/` so the `Audio()` constructor can load it via `/sounds/...`.
 
 ---
 
-### 1. `src/pages/Index.tsx`
+### Files Modified
 
-**A. Fix `showFullscreenBtn` (line 26)** — Remove the early return `if (isInFullscreen) return;` so the auto-hide timer works in both normal and fullscreen modes.
+**2 files: `src/index.css` and `src/pages/Index.tsx`**
 
-**B. Update `onFullscreenChange` handler (lines 50-52)** — Instead of hiding the button when entering fullscreen, show it briefly (with the 3-second auto-hide timer), same as when exiting.
+---
 
-**C. Remove conditional rendering (line 235)** — Change `{!isInFullscreen && (` to always render the button. The button should be visible in fullscreen so users can exit.
+### 1. `src/index.css` -- Add `@font-face` at top
 
-**D. Add icon toggle** — Show `⛶` when not in fullscreen, `✕` when in fullscreen. Change `aria-label` accordingly.
+Insert before line 1 (before the Google Fonts import):
 
-**E. Add `in-fullscreen` class** — When `isInFullscreen` is true, append `"fullscreen-btn in-fullscreen"` as className so CSS can style the fuchsia icon tint.
-
-Final JSX:
-
-```tsx
-<button
-  className={`fullscreen-btn${isInFullscreen ? " in-fullscreen" : ""}`}
-  onClick={toggleFullscreen}
-  aria-label={isInFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-  style={{
-    opacity: isFullscreenBtnVisible ? 1 : 0,
-    transform: isFullscreenBtnVisible ? "translateY(0)" : "translateY(15px)",
-    pointerEvents: isFullscreenBtnVisible ? "auto" : "none",
-  }}
->
-  {isInFullscreen ? "✕" : "⛶"}
-</button>
+```css
+@font-face {
+  font-family: 'BatmanaMedium';
+  src: url('/fonts/The_Year_of_The_Camel_Medium.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
 ```
 
----
-
-### 2. `src/index.css`
-
-**A. Update `.fullscreen-btn` base styles (lines 240-263)** — Replace with realistic glassmorphism matching the START button:
-- `background: rgba(255, 255, 255, 0.2)`
-- `backdrop-filter: blur(12px)`
-- `border: 1px solid rgba(255, 255, 255, 0.5)`
-- Bevel shadow system (grey drop shadow + white inset highlight)
-- Add `display: flex; justify-content: center; align-items: center;`
-
-**B. Update `.fullscreen-btn:hover` (lines 265-269)** — Enhanced bevel shadow on hover, with `transform: scale(1.08)`.
-
-**C. Update `.fullscreen-btn:active` (lines 271-274)** — Pressed-in shadow (inverted inset), `transform: scale(0.96) translateY(1px)`.
-
-**D. Add new rules:**
-- `.fullscreen-btn.in-fullscreen` — fuchsia icon color (`rgba(255, 19, 240, 0.8)`)
-- `.fullscreen-btn.in-fullscreen:hover` — stronger fuchsia on hover (`#FF13F0`)
-- `.fullscreen-btn:focus-visible` — focus ring with fuchsia border accent
+No other CSS changes needed -- the font is applied via inline style in the component.
 
 ---
 
-### What Changes Functionally
+### 2. `src/pages/Index.tsx` -- Three edits
 
-| Before | After |
+**A. Add audio ref and preload (top of component, after `hideTimerRef`):**
+
+```tsx
+const popSoundRef = useRef<HTMLAudioElement | null>(null);
+
+useEffect(() => {
+  const audio = new Audio("/sounds/mixkit-hard-pop-click-2364.wav");
+  audio.preload = "auto";
+  audio.load();
+  popSoundRef.current = audio;
+}, []);
+```
+
+Creates an `Audio` object on mount, preloads the WAV file so it plays instantly on click. No visible `<audio>` element needed.
+
+**B. Update `handleStart` to play sound (line 96):**
+
+```tsx
+const handleStart = () => {
+  // Play pop sound immediately
+  if (popSoundRef.current) {
+    popSoundRef.current.currentTime = 0;
+    popSoundRef.current.play().catch(() => {});
+  }
+  setIsExiting(true);
+  setTimeout(() => {
+    console.log("startCountdown()");
+  }, 600);
+};
+```
+
+Sound plays first, then the fade-out animation begins. The `.catch(() => {})` silently handles browsers that block audio (though this is user-initiated so it should always work).
+
+**C. Update Arabic text content and font (lines 169-190):**
+
+Change `fontFamily` from `"'Cairo', sans-serif"` to `"'BatmanaMedium', 'Cairo', sans-serif"` and `fontWeight` from `400` to `"normal"`.
+
+Change text from `بالله يا باتمانه اقلبي تلفونك` to `اقلبي تلفونك يا باتمانه`.
+
+---
+
+### Summary
+
+| Change | Detail |
 |---|---|
-| Button hidden entirely in fullscreen | Button stays visible (auto-hides after 3s, reappears on interaction) |
-| No way to exit fullscreen via button | Click button again to exit fullscreen |
-| Single icon `⛶` always | `⛶` in normal mode, `✕` in fullscreen mode |
-| Grey icon always | Grey normally, fuchsia tint in fullscreen |
-| Simple flat shadow | Realistic bevel glassmorphism matching START button |
+| Custom font file | Copied to `public/fonts/`, declared via `@font-face` as `BatmanaMedium` |
+| Arabic text font | `fontFamily: "'BatmanaMedium', 'Cairo', sans-serif"` (Cairo fallback) |
+| Arabic text content | Changed to `اقلبي تلفونك يا باتمانه` |
+| Pop sound file | Copied to `public/sounds/`, preloaded via `new Audio()` on mount |
+| Sound playback | `popSoundRef.current.play()` called at start of `handleStart` |
+| All previous enhancements | Untouched -- fullscreen toggle, velocity rain, glassmorphism button all preserved |
 
-### What Stays the Same
-
-- 3-second auto-hide timer
-- Reappear on touch/mouse/keyboard activity
-- Bottom-right fixed position
-- `toggleFullscreen()` logic (already supports both enter and exit)
-- Responsive sizing at 360px breakpoint
