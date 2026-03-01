@@ -6,6 +6,14 @@
   font-display: swap;
 }
 
+@font-face {
+  font-family: 'ArticulatCF';
+  src: url('/fonts/Articulat_CF_Demi_Bold.ttf') format('truetype');
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;900&family=Tajawal:wght@800&family=Playfair+Display:wght@700&family=Poppins:wght@200&family=Bebas+Neue&display=swap');
 
 @tailwind base;
@@ -324,5 +332,166 @@
     font-size: 20px;
     bottom: 16px;
     right: 16px;
+  }
+}
+
+/* ============================================
+   Section 2 — Cinematic Countdown
+   ============================================ */
+.section-two {
+  position: fixed;
+  inset: 0;
+  background: #ffb7fa;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.countdown-mask {
+  overflow: hidden;
+  width: 320px;
+  height: 300px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.countdown-number {
+  font-family: 'ArticulatCF', sans-serif;
+  font-size: 240px;
+  font-weight: 600;
+  color: #FFFFFF;
+  line-height: 1;
+  position: absolute;
+  text-shadow:
+    0 0 30px rgba(255, 19, 240, 0.9),
+    0 0 60px rgba(255, 19, 240, 0.7),
+    0 0 90px rgba(255, 19, 240, 0.5),
+    0 0 120px rgba(255, 19, 240, 0.3);
+  will-change: transform, filter;
+}
+
+.countdown-number.entering {
+  animation: masked-slide-enter 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.countdown-number.holding {
+  transform: translateY(0%);
+  filter: blur(0px);
+}
+
+.countdown-number.exiting {
+  animation: masked-slide-exit 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes masked-slide-enter {
+  0% {
+    transform: translateY(100%);
+    filter: blur(10px);
+  }
+  100% {
+    transform: translateY(0%);
+    filter: blur(0px);
+  }
+}
+
+@keyframes masked-slide-exit {
+  0% {
+    transform: translateY(0%);
+    filter: blur(0px);
+  }
+  100% {
+    transform: translateY(-100%);
+    filter: blur(10px);
+  }
+}
+
+/* Responsive countdown font sizes */
+@media (max-width: 400px) {
+  .countdown-number {
+    font-size: 180px;
+  }
+}
+
+@media (min-height: 500px) and (orientation: landscape) {
+  .countdown-number {
+    font-size: 260px;
+  }
+}
+
+/* ============================================
+   Orientation Guard (Section 2+ only)
+   ============================================ */
+.orientation-guard {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 183, 250, 0.4);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  z-index: 999998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guard-card {
+  padding: 40px 32px;
+  max-width: 85vw;
+  background: rgba(255, 255, 255, 0.3);
+  backdrop-filter: blur(25px);
+  -webkit-backdrop-filter: blur(25px);
+  border: 2px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+  box-shadow:
+    0 12px 40px rgba(255, 19, 240, 0.3),
+    inset 0 2px 4px rgba(255, 255, 255, 0.6);
+}
+
+.guard-message {
+  font-family: 'BatmanaMedium', 'Cairo', sans-serif;
+  font-size: 24px;
+  font-weight: normal;
+  color: #FF13F0;
+  text-align: center;
+  direction: rtl;
+  line-height: 1.8;
+  margin: 0;
+  text-shadow: 0 2px 8px rgba(255, 19, 240, 0.2);
+}
+
+/* ============================================
+   Confetti Explosion
+   ============================================ */
+.confetti-container {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 500;
+  overflow: hidden;
+}
+
+.confetti-piece {
+  position: absolute;
+  width: var(--size, 12px);
+  height: var(--size, 12px);
+  animation: confetti-burst 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes confetti-burst {
+  0% {
+    bottom: 0;
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+  }
+  80% {
+    opacity: 1;
+  }
+  100% {
+    bottom: 100%;
+    left: var(--target-x);
+    opacity: 0;
+    transform: rotate(var(--rotation)) scale(0.5);
   }
 }
