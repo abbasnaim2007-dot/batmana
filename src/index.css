@@ -11,7 +11,7 @@
   src: url('/fonts/Articulat_CF_Demi_Bold.ttf') format('truetype');
   font-weight: 600;
   font-style: normal;
-  font-display: swap;
+  font-display: block;
 }
 
 @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;900&family=Tajawal:wght@800&family=Playfair+Display:wght@700&family=Poppins:wght@200&family=Bebas+Neue&display=swap');
@@ -348,6 +348,17 @@
   justify-content: center;
 }
 
+/* Reveal overlay for circular wipe */
+.reveal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: #ffb7fa;
+  pointer-events: none;
+  will-change: clip-path;
+  clip-path: circle(0% at 50% 50%);
+}
+
 .countdown-mask {
   overflow: hidden;
   width: 320px;
@@ -356,11 +367,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
+  -webkit-mask-image: none;
+  isolation: isolate;
+}
+
+.countdown-mask::before,
+.countdown-mask::after {
+  display: none !important;
 }
 
 .countdown-number {
   font-family: 'ArticulatCF', sans-serif;
-  font-size: 240px;
+  font-size: clamp(120px, 18vw, 200px);
   font-weight: 600;
   color: #FFFFFF;
   line-height: 1;
@@ -370,55 +392,16 @@
     0 0 60px rgba(255, 19, 240, 0.7),
     0 0 90px rgba(255, 19, 240, 0.5),
     0 0 120px rgba(255, 19, 240, 0.3);
-  will-change: transform, filter;
+  will-change: transform, opacity;
+  background: transparent;
+  border: none;
+  outline: none;
+  box-shadow: none;
 }
 
-.countdown-number.entering {
-  animation: masked-slide-enter 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-.countdown-number.holding {
-  transform: translateY(0%);
-  filter: blur(0px);
-}
-
-.countdown-number.exiting {
-  animation: masked-slide-exit 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes masked-slide-enter {
-  0% {
-    transform: translateY(100%);
-    filter: blur(10px);
-  }
-  100% {
-    transform: translateY(0%);
-    filter: blur(0px);
-  }
-}
-
-@keyframes masked-slide-exit {
-  0% {
-    transform: translateY(0%);
-    filter: blur(0px);
-  }
-  100% {
-    transform: translateY(-100%);
-    filter: blur(10px);
-  }
-}
-
-/* Responsive countdown font sizes */
-@media (max-width: 400px) {
-  .countdown-number {
-    font-size: 180px;
-  }
-}
-
-@media (min-height: 500px) and (orientation: landscape) {
-  .countdown-number {
-    font-size: 260px;
-  }
+.countdown-number::before,
+.countdown-number::after {
+  display: none !important;
 }
 
 /* ============================================
@@ -427,10 +410,17 @@
 .orientation-guard {
   position: fixed;
   inset: 0;
-  background: rgba(255, 183, 250, 0.4);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  z-index: 999998;
+  background: rgba(255, 255, 255, 0.12);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+          backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.30);
+  -webkit-transform: translateZ(0);
+          transform: translateZ(0);
+  will-change: backdrop-filter;
+  z-index: 99999;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -440,8 +430,6 @@
   padding: 40px 32px;
   max-width: 85vw;
   background: rgba(255, 255, 255, 0.3);
-  backdrop-filter: blur(25px);
-  -webkit-backdrop-filter: blur(25px);
   border: 2px solid rgba(255, 255, 255, 0.6);
   border-radius: 24px;
   box-shadow:
@@ -459,39 +447,4 @@
   line-height: 1.8;
   margin: 0;
   text-shadow: 0 2px 8px rgba(255, 19, 240, 0.2);
-}
-
-/* ============================================
-   Confetti Explosion
-   ============================================ */
-.confetti-container {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 500;
-  overflow: hidden;
-}
-
-.confetti-piece {
-  position: absolute;
-  width: var(--size, 12px);
-  height: var(--size, 12px);
-  animation: confetti-burst 2.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-}
-
-@keyframes confetti-burst {
-  0% {
-    bottom: 0;
-    opacity: 1;
-    transform: rotate(0deg) scale(1);
-  }
-  80% {
-    opacity: 1;
-  }
-  100% {
-    bottom: 100%;
-    left: var(--target-x);
-    opacity: 0;
-    transform: rotate(var(--rotation)) scale(0.5);
-  }
 }
