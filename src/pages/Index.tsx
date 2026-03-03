@@ -3,36 +3,43 @@ import batmanLogo from "@/assets/batman-logo.png";
 import pookieBatman from "@/assets/pookie_batman.jpg";
 
 type CountdownPhase = 'idle' | 'running' | 'done';
-type NumberAnim = 'entering' | 'holding' | 'exiting' | null;
 
 const CONFETTI_COLORS = [
-  '#FF13F0', '#FFC4FB', '#FFFFFF', '#ffb7fa', '#FFD700',
-  '#FF1493', '#FF69B4', '#FFA500', '#00CED1', '#9370DB',
+  '#ffb7fa', '#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ffffff', '#ff922b',
 ];
+
+interface Particle {
+  x: number; y: number;
+  vx: number; vy: number;
+  gravity: number;
+  rotation: number; rotationSpeed: number;
+  color: string;
+  shape: 'rect' | 'circle';
+  width: number; height: number;
+  radius: number;
+  alpha: number; fadeRate: number;
+}
 
 const Index = () => {
   const [isPortrait, setIsPortrait] = useState(true);
-  const [isExiting, setIsExiting] = useState(false);
   const [isFullscreenBtnVisible, setIsFullscreenBtnVisible] = useState(true);
   const [isInFullscreen, setIsInFullscreen] = useState(false);
   const [currentSection, setCurrentSection] = useState<1 | 2>(1);
-  const [clipPath, setClipPath] = useState("circle(150vmax at 50% 50%)");
   const [countdownPhase, setCountdownPhase] = useState<CountdownPhase>('idle');
   const [currentNumber, setCurrentNumber] = useState<3 | 2 | 1 | null>(null);
-  const [numberAnim, setNumberAnim] = useState<NumberAnim>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const popSoundRef = useRef<HTMLAudioElement | null>(null);
   const startBtnRef = useRef<HTMLButtonElement | null>(null);
-  const countdownTimersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
-  const confettiRef = useRef<HTMLDivElement | null>(null);
-  const pausedStateRef = useRef<{ number: 3 | 2 | 1; anim: NumberAnim; elapsed: number } | null>(null);
-  const phaseStartRef = useRef<number>(0);
   const isPausedRef = useRef(false);
+  const revealOverlayRef = useRef<HTMLDivElement | null>(null);
+  const numberElRef = useRef<HTMLSpanElement | null>(null);
+  const confettiCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const countdownAbortRef = useRef(false);
+  const confettiRafRef = useRef<number | null>(null);
 
-  // Keep ref in sync with state
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
 
   // Audio preload
@@ -59,9 +66,7 @@ const Index = () => {
   const showFullscreenBtn = useCallback(() => {
     setIsFullscreenBtnVisible(true);
     if (hideTimerRef.current) clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = setTimeout(() => {
-      setIsFullscreenBtnVisible(false);
-    }, 3000);
+    hideTimerRef.current = setTimeout(() => setIsFullscreenBtnVisible(false), 3000);
   }, []);
 
   useEffect(() => {
@@ -116,204 +121,211 @@ const Index = () => {
     }));
   }, [isPortrait]);
 
-  // Clear all countdown timers
-  const clearCountdownTimers = useCallback(() => {
-    countdownTimersRef.current.forEach(t => clearTimeout(t));
-    countdownTimersRef.current = [];
-  }, []);
-
-  // Schedule a timeout and track it
-  const scheduleTimer = useCallback((fn: () => void, ms: number) => {
-    const t = setTimeout(fn, ms);
-    countdownTimersRef.current.push(t);
-    return t;
-  }, []);
-
-  // Confetti explosion
+  // === Canvas Confetti ===
   const triggerConfetti = useCallback(() => {
     setShowConfetti(true);
     navigator.vibrate?.([30, 50, 30]);
 
-    // Generate confetti pieces in the DOM
     requestAnimationFrame(() => {
-      const container = confettiRef.current;
-      if (!container) return;
-      container.innerHTML = '';
+      const canvas = confettiCanvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
 
-      for (let corner = 0; corner < 2; corner++) {
-        for (let i = 0; i < 50; i++) {
-          const piece = document.createElement('div');
-          piece.className = 'confetti-piece';
-          const color = CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)];
-          const size = 10 + Math.random() * 8;
-          const isCircle = Math.random() > 0.5;
-          const targetX = corner === 0
-            ? `${Math.random() * 80}%`
-            : `${20 + Math.random() * 80}%`;
-          const rotation = `${360 + Math.random() * 360}deg`;
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
 
-          piece.style.backgroundColor = color;
-          piece.style.setProperty('--size', `${size}px`);
-          piece.style.setProperty('--target-x', targetX);
-          piece.style.setProperty('--rotation', rotation);
-          piece.style.width = `${size}px`;
-          piece.style.height = `${size}px`;
-          piece.style.left = corner === 0 ? '10%' : '90%';
-          piece.style.bottom = '0';
-          if (isCircle) piece.style.borderRadius = '50%';
+      const particles: Particle[] = [];
+      const rand = (min: number, max: number) => min + Math.random() * (max - min);
 
-          container.appendChild(piece);
+      // Spawn two bursts
+      const origins = [
+        { x: 0, y: canvas.height },
+        { x: canvas.width, y: canvas.height },
+      ];
+
+      for (const origin of origins) {
+        const count = Math.floor(rand(55, 75));
+        const isLeft = origin.x === 0;
+        for (let i = 0; i < count; i++) {
+          const isRect = Math.random() < 0.6;
+          particles.push({
+            x: origin.x, y: origin.y,
+            vx: isLeft ? rand(2, 9) : rand(-9, -2),
+            vy: rand(-18, -8),
+            gravity: 0.45,
+            rotation: rand(0, 360),
+            rotationSpeed: rand(-8, 8),
+            color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+            shape: isRect ? 'rect' : 'circle',
+            width: rand(7, 14), height: rand(4, 10),
+            radius: rand(4, 8),
+            alpha: 1.0,
+            fadeRate: rand(0.008, 0.018),
+          });
         }
       }
+
+      const loop = () => {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (let i = particles.length - 1; i >= 0; i--) {
+          const p = particles[i];
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.vx *= 0.99;
+          p.rotation += p.rotationSpeed;
+          p.alpha -= p.fadeRate;
+
+          if (p.alpha <= 0) { particles.splice(i, 1); continue; }
+
+          ctx.save();
+          ctx.globalAlpha = Math.max(p.alpha, 0);
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rotation * Math.PI / 180);
+          ctx.fillStyle = p.color;
+          if (p.shape === 'rect') {
+            ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
+          } else {
+            ctx.beginPath();
+            ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+
+        if (particles.length > 0) {
+          confettiRafRef.current = requestAnimationFrame(loop);
+        } else {
+          setShowConfetti(false);
+          console.log("Ready for Section 3");
+        }
+      };
+      confettiRafRef.current = requestAnimationFrame(loop);
+    });
+  }, []);
+
+  // === Async Countdown with Web Animations API ===
+  const runCountdown = useCallback(async () => {
+    // Font loading gate
+    try { await document.fonts.load('600 200px "ArticulatCF"'); } catch {}
+
+    setCountdownPhase('running');
+
+    const waitWhilePaused = async () => {
+      while (isPausedRef.current) {
+        await new Promise(r => setTimeout(r, 100));
+      }
+    };
+
+    const delay = (ms: number) => new Promise<void>(resolve => {
+      const start = Date.now();
+      const check = () => {
+        if (countdownAbortRef.current) return;
+        if (isPausedRef.current) { requestAnimationFrame(check); return; }
+        if (Date.now() - start >= ms) resolve();
+        else requestAnimationFrame(check);
+      };
+      check();
     });
 
-    scheduleTimer(() => {
-      setShowConfetti(false);
-      console.log("Ready for Section 3");
-    }, 2500);
-  }, [scheduleTimer]);
+    for (const num of [3, 2, 1] as const) {
+      if (countdownAbortRef.current) return;
+      await waitWhilePaused();
 
-  // Countdown sequence
-  const runCountdownNumber = useCallback((num: 3 | 2 | 1) => {
-    setCurrentNumber(num);
-    setNumberAnim('entering');
-    navigator.vibrate?.(10);
-    phaseStartRef.current = Date.now();
+      setCurrentNumber(num);
+      navigator.vibrate?.(10);
 
-    scheduleTimer(() => {
-      if (isPausedRef.current) return;
-      setNumberAnim('holding');
-      phaseStartRef.current = Date.now();
+      // Wait for ref to be available
+      await new Promise(r => requestAnimationFrame(r));
+      const el = numberElRef.current;
+      if (!el) continue;
 
-      scheduleTimer(() => {
-        if (isPausedRef.current) return;
-        setNumberAnim('exiting');
-        phaseStartRef.current = Date.now();
+      // Entrance: slide up from below
+      const enterAnim = el.animate(
+        [
+          { transform: 'translateY(100%)', opacity: '1' },
+          { transform: 'translateY(0%)', opacity: '1' },
+        ],
+        { duration: 280, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }
+      );
+      await enterAnim.finished;
 
-        scheduleTimer(() => {
-          if (isPausedRef.current) return;
-          if (num > 1) {
-            runCountdownNumber((num - 1) as 3 | 2 | 1);
-          } else {
-            // Countdown done
-            setCurrentNumber(null);
-            setNumberAnim(null);
-            setCountdownPhase('done');
-            scheduleTimer(() => triggerConfetti(), 200);
-          }
-        }, 600);
-      }, 1400);
-    }, 600);
-  }, [scheduleTimer, triggerConfetti]);
+      // Hold
+      await delay(1400);
+      await waitWhilePaused();
 
-  const startCountdown = useCallback(() => {
-    setCountdownPhase('running');
-    runCountdownNumber(3);
-  }, [runCountdownNumber]);
+      // Exit: slide up out
+      const exitAnim = el.animate(
+        [
+          { transform: 'translateY(0%)', opacity: '1' },
+          { transform: 'translateY(-100%)', opacity: '1' },
+        ],
+        { duration: 280, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }
+      );
+      await exitAnim.finished;
+    }
 
-  // Handle START click — circular reveal then countdown
-  const handleStart = useCallback(() => {
+    if (countdownAbortRef.current) return;
+    setCurrentNumber(null);
+    setCountdownPhase('done');
+    await new Promise(r => setTimeout(r, 200));
+    triggerConfetti();
+  }, [triggerConfetti]);
+
+  // === Handle START click — circular reveal then countdown ===
+  const handleStart = useCallback(async () => {
     if (popSoundRef.current) {
       popSoundRef.current.currentTime = 0;
       popSoundRef.current.play().catch(() => {});
     }
 
-    // Get button center for clip-path origin
     const btn = startBtnRef.current;
-    const cx = btn ? btn.getBoundingClientRect().left + btn.offsetWidth / 2 : window.innerWidth / 2;
-    const cy = btn ? btn.getBoundingClientRect().top + btn.offsetHeight / 2 : window.innerHeight / 2;
+    const rect = btn?.getBoundingClientRect();
+    const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
+    const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
 
-    // Set clip-path origin to button center, start fully visible
-    setClipPath(`circle(150vmax at ${cx}px ${cy}px)`);
+    const overlay = revealOverlayRef.current;
+    if (overlay) {
+      overlay.style.clipPath = `circle(0% at ${cx}px ${cy}px)`;
 
-    // Next frame: shrink to 0 to reveal Section 2
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        setClipPath(`circle(0px at ${cx}px ${cy}px)`);
-      });
-    });
+      const anim = overlay.animate(
+        [
+          { clipPath: `circle(0% at ${cx}px ${cy}px)` },
+          { clipPath: `circle(150vmax at ${cx}px ${cy}px)` },
+        ],
+        {
+          duration: 600,
+          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
+          fill: 'forwards',
+        }
+      );
 
-    // After transition completes, switch to Section 2
-    setTimeout(() => {
-      setCurrentSection(2);
-      startCountdown();
-    }, 1200);
-  }, [startCountdown]);
+      await anim.finished;
+    }
+
+    setCurrentSection(2);
+    countdownAbortRef.current = false;
+    runCountdown();
+  }, [runCountdown]);
 
   // Orientation guard: pause/resume countdown in Section 2
   useEffect(() => {
     if (currentSection < 2) return;
     if (isPortrait && countdownPhase === 'running' && !isPaused) {
-      // Pause
       setIsPaused(true);
-      clearCountdownTimers();
-      // Pause CSS animations
-      document.querySelectorAll('.countdown-number').forEach((el) => {
-        (el as HTMLElement).style.animationPlayState = 'paused';
-      });
     } else if (!isPortrait && isPaused) {
-      // Resume
       setIsPaused(false);
-      document.querySelectorAll('.countdown-number').forEach((el) => {
-        (el as HTMLElement).style.animationPlayState = 'running';
-      });
-      // Re-run from current number/anim
-      if (currentNumber && numberAnim) {
-        if (numberAnim === 'entering') {
-          // Re-trigger from holding phase
-          scheduleTimer(() => {
-            setNumberAnim('holding');
-            phaseStartRef.current = Date.now();
-            scheduleTimer(() => {
-              setNumberAnim('exiting');
-              phaseStartRef.current = Date.now();
-              scheduleTimer(() => {
-                if (currentNumber > 1) {
-                  runCountdownNumber((currentNumber - 1) as 3 | 2 | 1);
-                } else {
-                  setCurrentNumber(null);
-                  setNumberAnim(null);
-                  setCountdownPhase('done');
-                  scheduleTimer(() => triggerConfetti(), 200);
-                }
-              }, 600);
-            }, 1400);
-          }, 300); // remaining entrance time estimate
-        } else if (numberAnim === 'holding') {
-          scheduleTimer(() => {
-            setNumberAnim('exiting');
-            phaseStartRef.current = Date.now();
-            scheduleTimer(() => {
-              if (currentNumber > 1) {
-                runCountdownNumber((currentNumber - 1) as 3 | 2 | 1);
-              } else {
-                setCurrentNumber(null);
-                setNumberAnim(null);
-                setCountdownPhase('done');
-                scheduleTimer(() => triggerConfetti(), 200);
-              }
-            }, 600);
-          }, 700); // remaining hold time estimate
-        } else if (numberAnim === 'exiting') {
-          scheduleTimer(() => {
-            if (currentNumber > 1) {
-              runCountdownNumber((currentNumber - 1) as 3 | 2 | 1);
-            } else {
-              setCurrentNumber(null);
-              setNumberAnim(null);
-              setCountdownPhase('done');
-              scheduleTimer(() => triggerConfetti(), 200);
-            }
-          }, 300); // remaining exit time estimate
-        }
-      }
     }
-  }, [isPortrait, currentSection, countdownPhase, isPaused, currentNumber, numberAnim, clearCountdownTimers, scheduleTimer, runCountdownNumber, triggerConfetti]);
+  }, [isPortrait, currentSection, countdownPhase, isPaused]);
 
   // Cleanup on unmount
   useEffect(() => {
-    return () => clearCountdownTimers();
-  }, [clearCountdownTimers]);
+    return () => {
+      countdownAbortRef.current = true;
+      if (confettiRafRef.current) cancelAnimationFrame(confettiRafRef.current);
+    };
+  }, []);
 
   return (
     <>
@@ -322,17 +334,27 @@ const Index = () => {
         {countdownPhase === 'running' && currentNumber && (
           <div className="countdown-mask">
             <span
-              className={`countdown-number ${numberAnim || ''}`}
+              ref={numberElRef}
+              className="countdown-number"
               aria-label={`${currentNumber}`}
+              style={{ transform: 'translateY(100%)' }}
             >
               {currentNumber}
             </span>
           </div>
         )}
-        {showConfetti && <div className="confetti-container" ref={confettiRef} />}
+        {showConfetti && (
+          <canvas
+            ref={confettiCanvasRef}
+            style={{ position: 'fixed', inset: 0, zIndex: 10000, pointerEvents: 'none' }}
+          />
+        )}
       </div>
 
-      {/* Section 1 — on top, clip-path reveals Section 2 */}
+      {/* Reveal overlay for circular wipe */}
+      <div ref={revealOverlayRef} className="reveal-overlay" />
+
+      {/* Section 1 — on top */}
       {currentSection === 1 && (
         <div
           style={{
@@ -346,9 +368,6 @@ const Index = () => {
             gap: "28px",
             overflow: "hidden",
             zIndex: 200,
-            clipPath,
-            transition: "clip-path 1.2s cubic-bezier(0.4, 0, 0.2, 1)",
-            willChange: "clip-path",
           }}
         >
           {/* Falling Batman logos */}
@@ -472,7 +491,7 @@ const Index = () => {
         </div>
       )}
 
-      {/* Fullscreen toggle button — persists across all sections */}
+      {/* Fullscreen toggle button */}
       <button
         className={`fullscreen-btn${isInFullscreen ? " in-fullscreen" : ""}`}
         onClick={toggleFullscreen}
