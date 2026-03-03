@@ -1,178 +1,88 @@
 
 
-## Section 1 Audio Swap + Section 2 Cinematic Countdown
+## Section 2 — Four Targeted Fixes
 
-### Part A: Audio File Swap (Simple)
-
-1. Copy `user-uploads://mixkit-long-pop-2358-2.wav` to `public/sounds/mixkit-long-pop-2358.wav`
-2. Copy `user-uploads://Articulat_CF_Demi_Bold.ttf` to `public/fonts/Articulat_CF_Demi_Bold.ttf`
-3. In `src/pages/Index.tsx` line 14, change the audio path from `"/sounds/mixkit-hard-pop-click-2364.wav"` to `"/sounds/mixkit-long-pop-2358.wav"`
+All changes confined to `src/pages/Index.tsx`, `src/index.css`, and `index.html`. Section 1 logic untouched.
 
 ---
 
-### Part B: Section 2 — The Cinematic Countdown
+### Fix 1: Circular Reveal via Overlay + Web Animations API
 
-The entire experience lives in `src/pages/Index.tsx` (single component) with supporting CSS in `src/index.css`. Section 2 is always in the DOM underneath Section 1, revealed by a circular wipe transition.
+**Current problem**: Section 1's `clip-path` shrinks to reveal Section 2, but the CSS transition approach has timing issues.
 
----
+**New approach**: Add a dedicated overlay `<div>` with `id="reveal-overlay"` rendered in the JSX. On START click:
+1. Compute `cx`/`cy` from `getBoundingClientRect()` of the button
+2. Use `overlay.animate()` (Web Animations API) to expand `clip-path: circle(0% at cx cy)` → `circle(150vmax at cx cy)` over 600ms
+3. On `animation.finished`, set `currentSection = 2` and start countdown
+4. Remove the old `clipPath` state and CSS `transition` from Section 1's wrapper entirely
 
-#### Architecture
+**JSX**: Add a ref `revealOverlayRef` for the overlay div, rendered at z-index 9999 with `pointer-events: none`, `background: #ffb7fa`, initial `clip-path: circle(0% at 50% 50%)`.
 
-```text
-Index component state:
-  currentSection: 1 | 2
-  isExiting: boolean (Section 1 fade/wipe)
-  clipPath: string (for circular reveal)
-  countdownPhase: 'idle' | 'running' | 'done'
-  currentNumber: 3 | 2 | 1 | null
-  numberAnim: 'entering' | 'holding' | 'exiting' | null
-  isPaused: boolean (orientation guard pause)
-  showConfetti: boolean
-
-Layer stack (z-index):
-  Section 2 background: z-index 100 (always in DOM)
-  Section 1 overlay:    z-index 200 (clip-path reveals Section 2)
-  Fullscreen button:    z-index 99999 (persists across sections)
-  Orientation guard:    z-index 999998
-```
+**Index.tsx changes**:
+- Remove `clipPath` state variable
+- Remove `clip-path` and `transition` from Section 1 wrapper style
+- `handleStart`: use `revealOverlayRef.current.animate(...)` with `.finished.then(...)` to transition and start countdown
+- Section 1 stays in DOM until animation finishes, then `setCurrentSection(2)` removes it
 
 ---
 
-#### CSS Additions to `src/index.css`
+### Fix 2: Kinetic Typography — Font Preload + Web Animations API + Clean Mask
 
-1. **New `@font-face`** for ArticulatCF (Articulat CF Demi Bold) alongside existing BatmanaMedium declaration
+**A. Font preload**: Add `<link rel="preload" href="/fonts/Articulat_CF_Demi_Bold.ttf" as="font" type="font/ttf" crossorigin="anonymous">` to `index.html`. Change `font-display: swap` → `font-display: block` in the `@font-face` for ArticulatCF.
 
-2. **Section 2 base styles:**
-   - `.section-two` -- solid `#ffb7fa` background, fixed, full viewport, z-index 100
-   - `.countdown-mask` -- overflow hidden container, centered, 320x300px
-   - `.countdown-number` -- ArticulatCF font, 240px size, white, fuchsia neon glow text-shadow, positioned for vertical slide
+**B. Font loading gate**: Before starting the countdown sequence, `await document.fonts.load('600 200px "ArticulatCF"')` to ensure no fallback flash on "3".
 
-3. **Countdown keyframes:**
-   - `@keyframes masked-slide-enter` -- translateY(100%) + blur(10px) to translateY(0%) + blur(0), 0.6s
-   - `@keyframes masked-slide-exit` -- translateY(0%) + blur(0) to translateY(-100%) + blur(10px), 0.6s
+**C. Countdown rewrite using Web Animations API**:
+- Replace the CSS class-based animation (`entering`/`holding`/`exiting` classes) with imperative `el.animate()` calls chained via `await animation.finished`
+- Use a single ref (`numberElRef`) for the countdown `<span>`
+- Each number cycle: set text content → entrance animate (280ms, translateY 100%→0%) → hold 1400ms via `setTimeout` wrapped in a Promise → exit animate (280ms, translateY 0%→-100%) → next number
+- Remove `numberAnim` state entirely; the countdown is driven by an async function
+- Keep `currentNumber` state for rendering, keep `countdownPhase` for guard logic
+- Haptic `navigator.vibrate?.(10)` at each entrance
 
-4. **Orientation guard styles:**
-   - `.orientation-guard` -- fixed overlay, `rgba(255, 183, 250, 0.4)` background, `backdrop-filter: blur(20px)`, z-index 999998
-   - `.guard-card` -- glassmorphism card with white bg, 25px blur, fuchsia border glow
-   - `.guard-message` -- BatmanaMedium font, 24px, fuchsia, RTL
+**D. Clean mask CSS**: Strip pseudo-elements, add explicit `background: transparent; border: none; outline: none; box-shadow: none; isolation: isolate;` to `.countdown-mask`.
 
-5. **Confetti styles:**
-   - `.confetti-piece` -- absolute positioned, animated with CSS custom properties for target position and rotation
-   - `@keyframes confetti-burst` -- bottom 0 to bottom 100%, with rotation and opacity fade
-
-6. **Responsive countdown font sizes:**
-   - `@media (max-width: 400px)` -- 180px
-   - `@media (min-height: 500px) and (orientation: landscape)` -- 260px
+**E. Font size**: Change to `clamp(120px, 18vw, 200px)`, remove the media query overrides.
 
 ---
 
-#### Component Logic Changes in `src/pages/Index.tsx`
+### Fix 3: Canvas-Based Confetti
 
-**New state variables:**
-- `currentSection` (1 or 2)
-- `clipPath` (string for the circular reveal CSS)
-- `countdownPhase` ('idle', 'running', 'done')
-- `currentNumber` (3, 2, 1, or null)
-- `numberAnim` ('entering', 'holding', 'exiting', or null)
-- `isPaused` (boolean for orientation guard)
-- `showConfetti` (boolean)
+Replace DOM-based confetti with a `<canvas>` particle system.
 
-**Updated `handleStart` function:**
-1. Play pop sound immediately (unchanged)
-2. Get the START button's bounding rect, compute center as viewport percentages
-3. Set initial `clipPath` to `circle(0% at X% Y%)`
-4. Use `requestAnimationFrame` to animate `clipPath` to `circle(150% at X% Y%)` over 1.2s using a CSS transition on the Section 1 wrapper
-5. After 1.2s, set `currentSection = 2`, remove Section 1 from DOM, activate orientation guard, and begin countdown
+**JSX**: Add a `<canvas>` ref (`confettiCanvasRef`) rendered when `showConfetti` is true, styled `position: fixed; inset: 0; z-index: 10000; pointer-events: none`.
 
-**Countdown sequence (`startCountdown`):**
-- For each number (3, 2, 1):
-  1. Set `currentNumber`, `numberAnim = 'entering'`
-  2. Trigger haptic: `navigator.vibrate?.(10)`
-  3. After 0.6s, set `numberAnim = 'holding'`
-  4. After 1.4s more, set `numberAnim = 'exiting'`
-  5. After 0.6s more, move to next number
-- After number 1 finishes:
-  1. Wait 200ms
-  2. Set `showConfetti = true`, trigger pattern vibration `navigator.vibrate?.([30, 50, 30])`
-  3. After 2.5s, clear confetti
-  4. Log "Ready for Section 3"
-
-**Orientation guard logic:**
-- Disabled when `currentSection === 1`
-- When `currentSection >= 2` and device is portrait: show guard overlay, pause countdown (clear timeouts, set `animationPlayState: 'paused'` on active number)
-- When landscape resumes: hide guard, resume countdown from where it paused
-
-**Confetti generation (JS, not CSS-only):**
-- On trigger, dynamically create 100 div elements (50 per corner) with random colors from the specified palette, random shapes (circle vs square via border-radius), random target positions and rotations via CSS custom properties
-- Each piece uses the `confetti-burst` keyframe animation with 2.5s duration
-- Clean up DOM after animation completes
+**`triggerConfetti` rewrite**:
+1. Set canvas size to `window.innerWidth × window.innerHeight`
+2. Spawn 2 bursts (bottom-left, bottom-right), ~65 particles each with randomized `vx`, `vy`, `gravity`, `rotation`, `rotationSpeed`, `color`, `shape`, `alpha`, `fadeRate` per the spec
+3. Run a `requestAnimationFrame` loop: update physics, draw rects/circles, remove dead particles, cancel when empty
+4. Colors: `['#ffb7fa','#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ffffff','#ff922b']`
+5. Remove all DOM confetti CSS (`.confetti-container`, `.confetti-piece`, `@keyframes confetti-burst`)
 
 ---
 
-#### JSX Structure
+### Fix 4: Orientation Guard — Safari-Safe Glassmorphism
 
-```text
-<>
-  {/* Section 2 -- always in DOM, behind Section 1 */}
-  {currentSection >= 1 && (
-    <div className="section-two">
-      {/* Countdown mask */}
-      {countdownPhase === 'running' && currentNumber && (
-        <div className="countdown-mask">
-          <span className={`countdown-number ${numberAnim}`}>
-            {currentNumber}
-          </span>
-        </div>
-      )}
+**CSS changes to `.orientation-guard`**:
+- Background: `rgba(255, 255, 255, 0.12)` (lighter, more frosted)
+- Add `-webkit-transform: translateZ(0); transform: translateZ(0); will-change: backdrop-filter;` to force GPU compositing
+- Add `saturate(180%)` to both `backdrop-filter` declarations
+- Box-shadow with depth: `0 8px 32px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.30)`
+- z-index stays 99999
 
-      {/* Confetti containers */}
-      {showConfetti && <div className="confetti-container" ref={confettiRef} />}
-    </div>
-  )}
-
-  {/* Section 1 -- on top, uses clip-path for circular reveal */}
-  {currentSection === 1 && (
-    <div style={{ clipPath, transition: 'clip-path 1.2s cubic-bezier(0.4,0,0.2,1)', zIndex: 200, ... }}>
-      {/* All existing Section 1 content unchanged */}
-    </div>
-  )}
-
-  {/* Orientation guard -- Section 2+ only */}
-  {currentSection >= 2 && isPortrait && (
-    <div className="orientation-guard">
-      <div className="guard-card">
-        <p className="guard-message">
-          باتمانة.. ارجعي اقلبي التلفون<br />عشان تكمل المفاجأة!
-        </p>
-      </div>
-    </div>
-  )}
-
-  {/* Fullscreen button -- persists across all sections */}
-  <button className={`fullscreen-btn ...`} ...>
-    {isInFullscreen ? "✕" : "⛶"}
-  </button>
-</>
-```
-
-**Important structural note:** The clip-path circular reveal works by applying an *inverted* clip-path to Section 1. Section 1 starts fully visible (`circle(150% at X% Y%)`). On START click, the clip-path shrinks to `circle(0% at X% Y%)`, making Section 1 disappear and revealing Section 2 underneath. This avoids the need for a separate pink overlay element.
-
-Actually, re-reading the spec: the circle of pink expands FROM the button center. So the approach is:
-- Section 2 (pink bg) sits behind Section 1 at z-index 100
-- Section 1 gets `clip-path: circle(150vmax at 50% 50%)` initially (fully visible)
-- On click, transition clip-path to `circle(0% at Xpx Ypx)` over 1.2s -- Section 1 shrinks away revealing pink Section 2
-- After transition, remove Section 1 from DOM
+**Remove `backdrop-filter` from `.guard-card`**: WebKit invalidates nested backdrop-filter. The card keeps its white-tinted bg and border but drops its own blur.
 
 ---
 
-#### Files Changed Summary
+### File-Level Summary
 
 | File | Changes |
 |---|---|
-| `public/sounds/mixkit-long-pop-2358.wav` | New file (copied from upload) |
-| `public/fonts/Articulat_CF_Demi_Bold.ttf` | New file (copied from upload) |
-| `src/index.css` | Add ArticulatCF font-face; add Section 2, countdown, orientation guard, and confetti CSS with keyframes |
-| `src/pages/Index.tsx` | Swap audio path; add Section 2 state management, circular reveal transition, countdown sequence with haptic feedback, orientation guard, confetti explosion |
+| `index.html` | Add `<link rel="preload">` for ArticulatCF font |
+| `src/index.css` | ArticulatCF `font-display: block`; countdown font-size to `clamp()`; remove media query overrides; clean `.countdown-mask`; remove `.countdown-number.entering/.exiting` animation rules; remove `.confetti-container/.confetti-piece/@keyframes confetti-burst`; update `.orientation-guard` for Safari; remove `backdrop-filter` from `.guard-card` |
+| `src/pages/Index.tsx` | Remove `clipPath`/`numberAnim` state; add `revealOverlayRef`/`numberElRef`/`confettiCanvasRef` refs; rewrite `handleStart` with overlay + Web Animations API; rewrite countdown as async function with `el.animate().finished`; rewrite `triggerConfetti` as canvas rAF particle system; add reveal overlay + canvas to JSX; update orientation guard pause/resume to work with new async approach |
 
-No other files change. The fullscreen button remains global and works across both sections.
+### Pause/Resume Strategy (Orientation Guard)
+
+The async countdown loop checks `isPausedRef.current` at each phase boundary. When paused, it enters a polling loop (`await new Promise(r => setTimeout(r, 100))`) until unpaused. This avoids complex timer cleanup — the async function simply waits. CSS `animationPlayState` manipulation is removed since we use Web Animations API (which can be paused via `animation.pause()`/`.play()` if mid-animation).
 
