@@ -1,34 +1,50 @@
 
 
-## Fix: Section 2 Post-Reveal Visibility + Animation Duration
+## Section 2 — Complete Sequencing Rewrite
 
-Two issues to fix, both in `src/pages/Index.tsx`:
+### Changes in `src/pages/Index.tsx`
 
-### Issue 1: Overlay blocks Section 2 content after reveal
+**1. Font pre-warm on mount** (new useEffect):
+Add a useEffect that runs `document.fonts.load('600 200px "ArticulatCF"')` on mount and adds `font-ready` class to `document.documentElement` when resolved. Fire-and-forget, does not block anything.
 
-After `await anim.finished` (line 304), the overlay remains at z-index 9999, hiding everything. Need to add overlay teardown **before** `setCurrentSection(2)`.
+**2. Rewrite `handleStart`** — strict post-animation sequencing:
+The clip-path animation call (origin, keyframes, duration 800, easing, fill) stays identical. After `await anim.finished`:
+- Step 1: Retire overlay synchronously (`pointerEvents: 'none'`, `zIndex: '-1'`, `opacity: '0'`)
+- Step 2: Activate Section 2 — `setCurrentSection(2)` (React renders section-two visible)
+- Step 3: Reset abort flag, call `runCountdown()` — single call site, no other invocations exist
 
-**Change in `handleStart` (lines 304-309):**
+Current code already does Steps 1-3 in the right order. The only structural issue is that `setCurrentSection(2)` triggers a React re-render, and `runCountdown()` fires before the DOM updates. Fix: add `await new Promise(r => requestAnimationFrame(r))` between `setCurrentSection(2)` and `runCountdown()` to ensure Section 2 DOM is painted before countdown starts.
 
-```ts
-      await anim.finished;
+**3. Section 2 z-index update** — in CSS:
+- `.section-two` z-index: `100` → `10000`
+- `.countdown-mask` gets `z-index: 10001` (relative stacking)
+- Confetti canvas inline style already has `z-index: 10002` ✓ (but update from 10000 → 10002)
+- `.orientation-guard` stays `99999` ✓
+- `.reveal-overlay` stays `9999` ✓
 
-      // Retire overlay instantly
-      overlay.style.pointerEvents = 'none';
-      overlay.style.zIndex = '-1';
-      overlay.style.opacity = '0';
-    }
+**4. Confetti canvas z-index** — in JSX inline style, change from `10000` to `10002`.
 
-    setCurrentSection(2);
-    countdownAbortRef.current = false;
-    runCountdown();
-```
+### Changes in `src/index.css`
 
-### Issue 2: Animation duration change
+- `.section-two` → `z-index: 10000`
+- Add `.countdown-mask` → `z-index: 10001`
+- Add font-ready gating:
+  ```css
+  .countdown-mask { visibility: hidden; }
+  .font-ready .countdown-mask { visibility: visible; }
+  ```
+  (Merge with existing `.countdown-mask` rule)
 
-Line 298: change `duration: 600` → `duration: 800`. Easing is already correct.
+### No changes to
+- Clip-path animation values, origin, duration (800), easing, color
+- Confetti particle physics
+- Orientation guard glassmorphism
+- Section 1 content/styles
 
-### No CSS changes needed
+### File summary
 
-The z-index layering in CSS is fine — the overlay just needs JS teardown after animation. The `.section-two` at z-index 100 will be visible once the overlay drops to -1.
+| File | What changes |
+|---|---|
+| `src/pages/Index.tsx` | Add font pre-warm useEffect; add rAF await between setCurrentSection and runCountdown; update confetti canvas z-index to 10002 |
+| `src/index.css` | `.section-two` z-index → 10000; `.countdown-mask` add z-index 10001 + font-ready visibility gating |
 
