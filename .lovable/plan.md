@@ -1,38 +1,34 @@
 
 
-## Fix: Section 2 Content Blocked by Reveal Overlay
+## Fix: Section 2 Post-Reveal Visibility + Animation Duration
 
-### Root Cause
+Two issues to fix, both in `src/pages/Index.tsx`:
 
-After the circular reveal animation completes, `revealOverlayRef` stays at `z-index: 9999` with `fill: 'forwards'` keeping it fully expanded. Section 2 sits at `z-index: 100` — completely underneath the opaque pink overlay. The countdown runs but is invisible.
+### Issue 1: Overlay blocks Section 2 content after reveal
 
-### Changes
+After `await anim.finished` (line 304), the overlay remains at z-index 9999, hiding everything. Need to add overlay teardown **before** `setCurrentSection(2)`.
 
-**`src/pages/Index.tsx`** — In `handleStart`, after `await anim.finished`, add overlay teardown before calling `setCurrentSection(2)` and `runCountdown()`:
+**Change in `handleStart` (lines 304-309):**
 
 ```ts
-await anim.finished;
+      await anim.finished;
 
-// Retire overlay instantly — no transitions
-overlay.style.pointerEvents = 'none';
-overlay.style.zIndex = '-1';
-overlay.style.opacity = '0';
+      // Retire overlay instantly
+      overlay.style.pointerEvents = 'none';
+      overlay.style.zIndex = '-1';
+      overlay.style.opacity = '0';
+    }
+
+    setCurrentSection(2);
+    countdownAbortRef.current = false;
+    runCountdown();
 ```
 
-**`src/index.css`** — Update z-index values for proper layering:
+### Issue 2: Animation duration change
 
-- `.section-two` → `z-index: 100` (unchanged, overlay is retired so this is fine)
-- `.reveal-overlay` → stays `z-index: 9999` (only during animation, then set to -1 via JS)
-- Confetti canvas inline style already has `z-index: 10000` (no change)
-- `.orientation-guard` → `z-index: 99999` (unchanged)
+Line 298: change `duration: 600` → `duration: 800`. Easing is already correct.
 
-No CSS changes needed — the fix is purely in the JS teardown sequence in `handleStart`.
+### No CSS changes needed
 
-### What is NOT touched
-
-- Clip-path animation values, origin calculation, duration, easing, overlay color
-- Countdown logic (`runCountdown`)
-- Confetti system
-- Section 1 content/styles
-- Orientation guard logic
+The z-index layering in CSS is fine — the overlay just needs JS teardown after animation. The `.section-two` at z-index 100 will be visible once the overlay drops to -1.
 
