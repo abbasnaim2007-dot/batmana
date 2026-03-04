@@ -342,7 +342,7 @@
   position: fixed;
   inset: 0;
   background: #ffb7fa;
-  z-index: 100;
+  z-index: 10000;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -373,6 +373,12 @@
   box-shadow: none;
   -webkit-mask-image: none;
   isolation: isolate;
+  z-index: 10001;
+  visibility: hidden;
+}
+
+.font-ready .countdown-mask {
+  visibility: visible;
 }
 
 .countdown-mask::before,

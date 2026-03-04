@@ -42,6 +42,13 @@ const Index = () => {
 
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
 
+  // Font pre-warm — fire-and-forget on mount
+  useEffect(() => {
+    document.fonts.load('600 200px "ArticulatCF"').then(() => {
+      document.documentElement.classList.add('font-ready');
+    }).catch(() => {});
+  }, []);
+
   // Audio preload
   useEffect(() => {
     const audio = new Audio("/sounds/mixkit-long-pop-2358.wav");
@@ -311,6 +318,9 @@ const Index = () => {
 
     setCurrentSection(2);
     countdownAbortRef.current = false;
+
+    // Wait for React to paint Section 2 DOM before starting countdown
+    await new Promise(r => requestAnimationFrame(r));
     runCountdown();
   }, [runCountdown]);
 
@@ -351,7 +361,7 @@ const Index = () => {
         {showConfetti && (
           <canvas
             ref={confettiCanvasRef}
-            style={{ position: 'fixed', inset: 0, zIndex: 10000, pointerEvents: 'none' }}
+            style={{ position: 'fixed', inset: 0, zIndex: 10002, pointerEvents: 'none' }}
           />
         )}
       </div>
