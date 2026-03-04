@@ -295,13 +295,18 @@ const Index = () => {
           { clipPath: `circle(150vmax at ${cx}px ${cy}px)` },
         ],
         {
-          duration: 600,
+          duration: 800,
           easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
           fill: 'forwards',
         }
       );
 
       await anim.finished;
+
+      // Retire overlay instantly
+      overlay.style.pointerEvents = 'none';
+      overlay.style.zIndex = '-1';
+      overlay.style.opacity = '0';
     }
 
     setCurrentSection(2);
