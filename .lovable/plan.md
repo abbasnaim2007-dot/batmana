@@ -1,50 +1,81 @@
 
 
-## Section 2 — Complete Sequencing Rewrite
+## Section 2 Rewrite — Updated Z-Index Hierarchy + Asset Refresh
 
-### Changes in `src/pages/Index.tsx`
+### Summary
 
-**1. Font pre-warm on mount** (new useEffect):
-Add a useEffect that runs `document.fonts.load('600 200px "ArticulatCF"')` on mount and adds `font-ready` class to `document.documentElement` when resolved. Fire-and-forget, does not block anything.
+Adopt the user's new simplified z-index scheme, copy uploaded asset files, update the reveal overlay to start fully inactive on load, and apply the START button font change.
 
-**2. Rewrite `handleStart`** — strict post-animation sequencing:
-The clip-path animation call (origin, keyframes, duration 800, easing, fill) stays identical. After `await anim.finished`:
-- Step 1: Retire overlay synchronously (`pointerEvents: 'none'`, `zIndex: '-1'`, `opacity: '0'`)
-- Step 2: Activate Section 2 — `setCurrentSection(2)` (React renders section-two visible)
-- Step 3: Reset abort flag, call `runCountdown()` — single call site, no other invocations exist
+### File copies (uploaded assets → project)
 
-Current code already does Steps 1-3 in the right order. The only structural issue is that `setCurrentSection(2)` triggers a React re-render, and `runCountdown()` fires before the DOM updates. Fix: add `await new Promise(r => requestAnimationFrame(r))` between `setCurrentSection(2)` and `runCountdown()` to ensure Section 2 DOM is painted before countdown starts.
-
-**3. Section 2 z-index update** — in CSS:
-- `.section-two` z-index: `100` → `10000`
-- `.countdown-mask` gets `z-index: 10001` (relative stacking)
-- Confetti canvas inline style already has `z-index: 10002` ✓ (but update from 10000 → 10002)
-- `.orientation-guard` stays `99999` ✓
-- `.reveal-overlay` stays `9999` ✓
-
-**4. Confetti canvas z-index** — in JSX inline style, change from `10000` to `10002`.
-
-### Changes in `src/index.css`
-
-- `.section-two` → `z-index: 10000`
-- Add `.countdown-mask` → `z-index: 10001`
-- Add font-ready gating:
-  ```css
-  .countdown-mask { visibility: hidden; }
-  .font-ready .countdown-mask { visibility: visible; }
-  ```
-  (Merge with existing `.countdown-mask` rule)
-
-### No changes to
-- Clip-path animation values, origin, duration (800), easing, color
-- Confetti particle physics
-- Orientation guard glassmorphism
-- Section 1 content/styles
-
-### File summary
-
-| File | What changes |
+| Source | Destination |
 |---|---|
-| `src/pages/Index.tsx` | Add font pre-warm useEffect; add rAF await between setCurrentSection and runCountdown; update confetti canvas z-index to 10002 |
-| `src/index.css` | `.section-two` z-index → 10000; `.countdown-mask` add z-index 10001 + font-ready visibility gating |
+| `user-uploads://Articulat_CF_Demi_Bold-2.ttf` | `public/fonts/Articulat_CF_Demi_Bold.ttf` |
+| `user-uploads://The_Year_of_The_Camel_Medium-2.otf` | `public/fonts/The_Year_of_The_Camel_Medium.otf` |
+| `user-uploads://mixkit-long-pop-2358-3.wav` | `public/sounds/mixkit-long-pop-2358.wav` |
+
+### Z-Index hierarchy change (`src/index.css`)
+
+Old → New:
+
+| Element | Old | New |
+|---|---|---|
+| Section 1 (inline) | 200 | 100 |
+| Section 2 `.section-two` | 10000 | 200 |
+| Reveal overlay `.reveal-overlay` (active) | 9999 | 300 |
+| Reveal overlay (retired via JS) | -1 | -1 (unchanged) |
+| `.countdown-mask` | 10001 | remove explicit z-index (stacks naturally within section-two) |
+| Confetti canvas (inline) | 10002 | 999 (below orientation guard) |
+| `.orientation-guard` | 99999 | 999 |
+
+Wait — the spec puts orientation guard at 999 and confetti canvas would conflict. Let me re-read the spec: orientation alert is 999, confetti is not in the spec hierarchy. I'll keep confetti at 500 (between section-two at 200 and orientation at 999).
+
+Revised:
+
+| Element | Z-Index |
+|---|---|
+| Reveal overlay (inactive) | -1 |
+| Section 1 | 100 |
+| Section 2 `.section-two` | 200 |
+| Confetti canvas | 500 |
+| Reveal overlay (active during animation) | 300 |
+| `.orientation-guard` | 999 |
+
+### CSS changes (`src/index.css`)
+
+1. `.section-two` z-index: `10000` → `200`
+2. `.reveal-overlay` z-index: `9999` → `300`; add default inactive state: `opacity: 0; pointer-events: none;`
+3. `.countdown-mask` z-index: `10001` → remove (natural stacking within parent)
+4. `.orientation-guard` z-index: `99999` → `999`
+
+### JS changes (`src/pages/Index.tsx`)
+
+1. **Reveal overlay activation on click**: Before `animate()`, set overlay to active state:
+   ```ts
+   overlay.style.zIndex = '300';
+   overlay.style.opacity = '1';
+   overlay.style.pointerEvents = 'all';
+   ```
+
+2. **Section 1 inline z-index**: `200` → `100`
+
+3. **Confetti canvas inline z-index**: `10002` → `500`
+
+4. **START button font**: Change `fontFamily` from `'Open Sans', sans-serif` → `'BatmanaMedium', sans-serif` (The Year of The Camel is already loaded as BatmanaMedium in CSS)
+
+5. **Post-animation teardown** (already correct, no change needed):
+   ```ts
+   overlay.style.pointerEvents = 'none';
+   overlay.style.zIndex = '-1';
+   overlay.style.opacity = '0';
+   ```
+
+### What is NOT changed
+- Clip-path animation keyframes, origin calculation, duration (800ms), easing, fill
+- Confetti particle physics
+- Countdown animation logic (slide up/down, 280ms, Web Animations API)
+- Orientation guard glassmorphism styling
+- Section 1 content (image, text, falling logos)
+- Font pre-warm useEffect
+- rAF paint wait before runCountdown()
 
