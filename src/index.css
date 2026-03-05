@@ -342,7 +342,7 @@
   position: fixed;
   inset: 0;
   background: #ffb7fa;
-  z-index: 10000;
+  z-index: 200;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -352,8 +352,9 @@
 .reveal-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: -1;
   background: #ffb7fa;
+  opacity: 0;
   pointer-events: none;
   will-change: clip-path;
   clip-path: circle(0% at 50% 50%);
@@ -373,7 +374,7 @@
   box-shadow: none;
   -webkit-mask-image: none;
   isolation: isolate;
-  z-index: 10001;
+  
   visibility: hidden;
 }
 
@@ -426,7 +427,7 @@
   -webkit-transform: translateZ(0);
           transform: translateZ(0);
   will-change: backdrop-filter;
-  z-index: 99999;
+  z-index: 999;
   display: flex;
   align-items: center;
   justify-content: center;
