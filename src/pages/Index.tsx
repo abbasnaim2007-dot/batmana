@@ -348,7 +348,7 @@ const Index = () => {
   return (
     <>
       {/* Section 2 — always in DOM behind Section 1 */}
-      <div className="section-two" aria-live="polite">
+      <div className={`section-two${currentSection === 2 ? ' is-active' : ''}`} aria-live="polite">
         {countdownPhase === 'running' && currentNumber && (
           <div className="countdown-mask">
             <span
