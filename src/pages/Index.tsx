@@ -294,6 +294,9 @@ const Index = () => {
 
     const overlay = revealOverlayRef.current;
     if (overlay) {
+      overlay.style.zIndex = '300';
+      overlay.style.opacity = '1';
+      overlay.style.pointerEvents = 'all';
       overlay.style.clipPath = `circle(0% at ${cx}px ${cy}px)`;
 
       const anim = overlay.animate(
@@ -361,7 +364,7 @@ const Index = () => {
         {showConfetti && (
           <canvas
             ref={confettiCanvasRef}
-            style={{ position: 'fixed', inset: 0, zIndex: 10002, pointerEvents: 'none' }}
+            style={{ position: 'fixed', inset: 0, zIndex: 500, pointerEvents: 'none' }}
           />
         )}
       </div>
@@ -382,7 +385,7 @@ const Index = () => {
             justifyContent: "center",
             gap: "28px",
             overflow: "hidden",
-            zIndex: 200,
+            zIndex: 100,
           }}
         >
           {/* Falling Batman logos */}
@@ -466,7 +469,7 @@ const Index = () => {
               padding: "12px 36px",
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
-              fontFamily: "'Open Sans', sans-serif",
+              fontFamily: "'BatmanaMedium', sans-serif",
               fontSize: "16px",
               fontWeight: 500,
               color: "#FF13F0",
