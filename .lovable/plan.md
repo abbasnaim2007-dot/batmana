@@ -1,81 +1,42 @@
 
 
-## Section 2 Rewrite — Updated Z-Index Hierarchy + Asset Refresh
+## Section 2 — Z-Index Hierarchy Rewrite + Overlay Init Fix
 
-### Summary
+### What's wrong now
 
-Adopt the user's new simplified z-index scheme, copy uploaded asset files, update the reveal overlay to start fully inactive on load, and apply the START button font change.
+The current z-index values (10000, 9999, 10001, 10002, 99999) are inflated. The reveal overlay has no explicit inactive default state in CSS and no activation step before `animate()`. The START button uses Open Sans instead of the Camel font.
 
-### File copies (uploaded assets → project)
+### Changes
 
-| Source | Destination |
-|---|---|
-| `user-uploads://Articulat_CF_Demi_Bold-2.ttf` | `public/fonts/Articulat_CF_Demi_Bold.ttf` |
-| `user-uploads://The_Year_of_The_Camel_Medium-2.otf` | `public/fonts/The_Year_of_The_Camel_Medium.otf` |
-| `user-uploads://mixkit-long-pop-2358-3.wav` | `public/sounds/mixkit-long-pop-2358.wav` |
-
-### Z-Index hierarchy change (`src/index.css`)
-
-Old → New:
-
-| Element | Old | New |
-|---|---|---|
-| Section 1 (inline) | 200 | 100 |
-| Section 2 `.section-two` | 10000 | 200 |
-| Reveal overlay `.reveal-overlay` (active) | 9999 | 300 |
-| Reveal overlay (retired via JS) | -1 | -1 (unchanged) |
-| `.countdown-mask` | 10001 | remove explicit z-index (stacks naturally within section-two) |
-| Confetti canvas (inline) | 10002 | 999 (below orientation guard) |
-| `.orientation-guard` | 99999 | 999 |
-
-Wait — the spec puts orientation guard at 999 and confetti canvas would conflict. Let me re-read the spec: orientation alert is 999, confetti is not in the spec hierarchy. I'll keep confetti at 500 (between section-two at 200 and orientation at 999).
-
-Revised:
-
-| Element | Z-Index |
-|---|---|
-| Reveal overlay (inactive) | -1 |
-| Section 1 | 100 |
-| Section 2 `.section-two` | 200 |
-| Confetti canvas | 500 |
-| Reveal overlay (active during animation) | 300 |
-| `.orientation-guard` | 999 |
-
-### CSS changes (`src/index.css`)
+**`src/index.css`** — 4 edits:
 
 1. `.section-two` z-index: `10000` → `200`
-2. `.reveal-overlay` z-index: `9999` → `300`; add default inactive state: `opacity: 0; pointer-events: none;`
-3. `.countdown-mask` z-index: `10001` → remove (natural stacking within parent)
+2. `.reveal-overlay` z-index: `9999` → `-1`; add `opacity: 0; pointer-events: none;` as default inactive state
+3. `.countdown-mask` z-index: `10001` → remove (keep visibility gating, remove z-index line)
 4. `.orientation-guard` z-index: `99999` → `999`
 
-### JS changes (`src/pages/Index.tsx`)
+**`src/pages/Index.tsx`** — 4 edits:
 
-1. **Reveal overlay activation on click**: Before `animate()`, set overlay to active state:
+1. **Section 1 inline z-index** (line 385): `200` → `100`
+2. **Confetti canvas inline z-index** (line 364): `10002` → `500`
+3. **Overlay activation before animate()** — insert before `overlay.style.clipPath` (line 297):
    ```ts
    overlay.style.zIndex = '300';
    overlay.style.opacity = '1';
    overlay.style.pointerEvents = 'all';
    ```
+4. **START button font** (line 469): `'Open Sans', sans-serif` → `'BatmanaMedium', sans-serif`
 
-2. **Section 1 inline z-index**: `200` → `100`
+### Asset copies
 
-3. **Confetti canvas inline z-index**: `10002` → `500`
+Copy uploaded files to replace existing assets:
+- `user-uploads://Articulat_CF_Demi_Bold-3.ttf` → `public/fonts/Articulat_CF_Demi_Bold.ttf`
+- `user-uploads://The_Year_of_The_Camel_Medium-3.otf` → `public/fonts/The_Year_of_The_Camel_Medium.otf`
+- `user-uploads://mixkit-long-pop-2358-4.wav` → `public/sounds/mixkit-long-pop-2358.wav`
 
-4. **START button font**: Change `fontFamily` from `'Open Sans', sans-serif` → `'BatmanaMedium', sans-serif` (The Year of The Camel is already loaded as BatmanaMedium in CSS)
-
-5. **Post-animation teardown** (already correct, no change needed):
-   ```ts
-   overlay.style.pointerEvents = 'none';
-   overlay.style.zIndex = '-1';
-   overlay.style.opacity = '0';
-   ```
-
-### What is NOT changed
-- Clip-path animation keyframes, origin calculation, duration (800ms), easing, fill
-- Confetti particle physics
-- Countdown animation logic (slide up/down, 280ms, Web Animations API)
-- Orientation guard glassmorphism styling
-- Section 1 content (image, text, falling logos)
-- Font pre-warm useEffect
-- rAF paint wait before runCountdown()
+### What stays unchanged
+- Clip-path animation (800ms, easing, keyframes, origin calc)
+- Post-animation overlay teardown (already sets zIndex=-1, opacity=0, pointerEvents=none)
+- Countdown logic, confetti physics, orientation guard styling
+- Font pre-warm useEffect, rAF paint wait
 
