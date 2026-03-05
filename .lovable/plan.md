@@ -1,42 +1,34 @@
 
 
-## Section 2 — Z-Index Hierarchy Rewrite + Overlay Init Fix
+## Critical Bug Fix: Pink Screen on Load + Asset Refresh
 
-### What's wrong now
+### Root Cause
 
-The current z-index values (10000, 9999, 10001, 10002, 99999) are inflated. The reveal overlay has no explicit inactive default state in CSS and no activation step before `animate()`. The START button uses Open Sans instead of the Camel font.
+`.section-two` has `z-index: 200` and `background: #ffb7fa`, sitting **above** Section 1 at `z-index: 100`. It renders immediately, covering everything with a pink screen.
 
-### Changes
+### Fix
 
-**`src/index.css`** — 4 edits:
+**`src/index.css`** — 2 edits:
 
-1. `.section-two` z-index: `10000` → `200`
-2. `.reveal-overlay` z-index: `9999` → `-1`; add `opacity: 0; pointer-events: none;` as default inactive state
-3. `.countdown-mask` z-index: `10001` → remove (keep visibility gating, remove z-index line)
-4. `.orientation-guard` z-index: `99999` → `999`
+1. `.section-two`: Add `opacity: 0; pointer-events: none;` as default hidden state, keep `z-index: 200`
+2. Add `.section-two.is-active` rule: `opacity: 1; pointer-events: all;`
 
-**`src/pages/Index.tsx`** — 4 edits:
+**`src/pages/Index.tsx`** — 2 edits:
 
-1. **Section 1 inline z-index** (line 385): `200` → `100`
-2. **Confetti canvas inline z-index** (line 364): `10002` → `500`
-3. **Overlay activation before animate()** — insert before `overlay.style.clipPath` (line 297):
-   ```ts
-   overlay.style.zIndex = '300';
-   overlay.style.opacity = '1';
-   overlay.style.pointerEvents = 'all';
+1. On the `.section-two` div, conditionally add `is-active` class when `currentSection === 2`:
+   ```tsx
+   <div className={`section-two${currentSection === 2 ? ' is-active' : ''}`}>
    ```
-4. **START button font** (line 469): `'Open Sans', sans-serif` → `'BatmanaMedium', sans-serif`
+2. Remove the `setCurrentSection(2)` guard on Section 1 rendering — Section 1 stays in DOM but is naturally behind the overlay/section-two stack. (Or keep as-is since Section 1 unmounts when `currentSection !== 1`, which is fine.)
 
-### Asset copies
+### Asset Copies
 
-Copy uploaded files to replace existing assets:
-- `user-uploads://Articulat_CF_Demi_Bold-3.ttf` → `public/fonts/Articulat_CF_Demi_Bold.ttf`
-- `user-uploads://The_Year_of_The_Camel_Medium-3.otf` → `public/fonts/The_Year_of_The_Camel_Medium.otf`
-- `user-uploads://mixkit-long-pop-2358-4.wav` → `public/sounds/mixkit-long-pop-2358.wav`
+- `user-uploads://Articulat_CF_Demi_Bold-4.ttf` → `public/fonts/Articulat_CF_Demi_Bold.ttf`
+- `user-uploads://The_Year_of_The_Camel_Medium-4.otf` → `public/fonts/The_Year_of_The_Camel_Medium.otf`
+- `user-uploads://mixkit-long-pop-2358-5.wav` → `public/sounds/mixkit-long-pop-2358.wav`
 
 ### What stays unchanged
-- Clip-path animation (800ms, easing, keyframes, origin calc)
-- Post-animation overlay teardown (already sets zIndex=-1, opacity=0, pointerEvents=none)
-- Countdown logic, confetti physics, orientation guard styling
-- Font pre-warm useEffect, rAF paint wait
+- All transition logic in `handleStart` (overlay activation, clip-path animation, teardown, rAF wait, `runCountdown()`)
+- Countdown, confetti, orientation guard logic
+- Z-index values for overlay, confetti canvas, orientation guard
 
