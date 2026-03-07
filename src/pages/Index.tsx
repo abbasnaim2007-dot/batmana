@@ -4,29 +4,12 @@ import pookieBatman from "@/assets/pookie_batman.jpg";
 
 type CountdownPhase = 'idle' | 'running' | 'done';
 
-const CONFETTI_COLORS = [
-  '#ffb7fa', '#ff6b6b', '#ffd93d', '#6bcb77', '#4d96ff', '#ffffff', '#ff922b',
-];
-
-interface Particle {
-  x: number; y: number;
-  vx: number; vy: number;
-  gravity: number;
-  rotation: number; rotationSpeed: number;
-  color: string;
-  shape: 'rect' | 'circle';
-  width: number; height: number;
-  radius: number;
-  alpha: number; fadeRate: number;
-}
-
 const Index = () => {
   const [isPortrait, setIsPortrait] = useState(true);
   const [isFullscreenBtnVisible, setIsFullscreenBtnVisible] = useState(true);
   const [isInFullscreen, setIsInFullscreen] = useState(false);
   const [currentSection, setCurrentSection] = useState<1 | 2>(1);
   const [countdownPhase, setCountdownPhase] = useState<CountdownPhase>('idle');
-  const [currentNumber, setCurrentNumber] = useState<3 | 2 | 1 | null>(null);
   const [isPaused, setIsPaused] = useState(false);
   const [showConfetti, setShowConfetti] = useState(false);
 
@@ -128,7 +111,7 @@ const Index = () => {
     }));
   }, [isPortrait]);
 
-  // === Canvas Confetti ===
+  // === Canvas Confetti (Fix 5 — stronger & slower) ===
   const triggerConfetti = useCallback(() => {
     setShowConfetti(true);
     navigator.vibrate?.([30, 50, 30]);
@@ -142,142 +125,105 @@ const Index = () => {
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
 
-      const particles: Particle[] = [];
-      const rand = (min: number, max: number) => min + Math.random() * (max - min);
+      const colors = ['#ffb7fa', '#ffffff', '#f7c6ff', '#e040fb', '#ff80ff', '#fce4ff', '#ffccff'];
 
-      // Spawn two bursts
-      const origins = [
-        { x: 0, y: canvas.height },
-        { x: canvas.width, y: canvas.height },
-      ];
+      const particles = Array.from({ length: 300 }, (_, i) => ({
+        x: i < 150 ? 0 : canvas.width,
+        y: canvas.height,
+        vx: i < 150
+          ? Math.random() * 14 + 5
+          : -(Math.random() * 14 + 5),
+        vy: -(Math.random() * 22 + 10),
+        color: colors[Math.floor(Math.random() * colors.length)],
+        size: Math.random() * 10 + 5,
+        gravity: 0.25,
+        rotation: Math.random() * 360,
+        rotationSpeed: (Math.random() - 0.5) * 6,
+      }));
 
-      for (const origin of origins) {
-        const count = Math.floor(rand(55, 75));
-        const isLeft = origin.x === 0;
-        for (let i = 0; i < count; i++) {
-          const isRect = Math.random() < 0.6;
-          particles.push({
-            x: origin.x, y: origin.y,
-            vx: isLeft ? rand(2, 9) : rand(-9, -2),
-            vy: rand(-18, -8),
-            gravity: 0.45,
-            rotation: rand(0, 360),
-            rotationSpeed: rand(-8, 8),
-            color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
-            shape: isRect ? 'rect' : 'circle',
-            width: rand(7, 14), height: rand(4, 10),
-            radius: rand(4, 8),
-            alpha: 1.0,
-            fadeRate: rand(0.008, 0.018),
-          });
-        }
-      }
-
-      const loop = () => {
+      const animate = () => {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-        for (let i = particles.length - 1; i >= 0; i--) {
-          const p = particles[i];
+        let alive = false;
+
+        for (const p of particles) {
           p.x += p.vx;
           p.y += p.vy;
           p.vy += p.gravity;
-          p.vx *= 0.99;
+          p.vx *= 0.995;
           p.rotation += p.rotationSpeed;
-          p.alpha -= p.fadeRate;
 
-          if (p.alpha <= 0) { particles.splice(i, 1); continue; }
-
-          ctx.save();
-          ctx.globalAlpha = Math.max(p.alpha, 0);
-          ctx.translate(p.x, p.y);
-          ctx.rotate(p.rotation * Math.PI / 180);
-          ctx.fillStyle = p.color;
-          if (p.shape === 'rect') {
-            ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
-          } else {
-            ctx.beginPath();
-            ctx.arc(0, 0, p.radius, 0, Math.PI * 2);
-            ctx.fill();
+          if (p.y < canvas.height + 30) {
+            alive = true;
+            ctx.save();
+            ctx.translate(p.x, p.y);
+            ctx.rotate((p.rotation * Math.PI) / 180);
+            ctx.fillStyle = p.color;
+            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.5);
+            ctx.restore();
           }
-          ctx.restore();
         }
 
-        if (particles.length > 0) {
-          confettiRafRef.current = requestAnimationFrame(loop);
+        if (alive) {
+          confettiRafRef.current = requestAnimationFrame(animate);
         } else {
           setShowConfetti(false);
           console.log("Ready for Section 3");
         }
       };
-      confettiRafRef.current = requestAnimationFrame(loop);
+
+      confettiRafRef.current = requestAnimationFrame(animate);
     });
   }, []);
 
-  // === Async Countdown with Web Animations API ===
+  // === Countdown Animation (Fix 4 — smooth translateY enter/exit) ===
   const runCountdown = useCallback(async () => {
-    // Font loading gate
     try { await document.fonts.load('600 200px "ArticulatCF"'); } catch {}
 
     setCountdownPhase('running');
 
-    const waitWhilePaused = async () => {
-      while (isPausedRef.current) {
-        await new Promise(r => setTimeout(r, 100));
+    const numbers = [3, 2, 1];
+    let index = 0;
+
+    const showNext = () => {
+      if (index >= numbers.length) {
+        setCountdownPhase('done');
+        setTimeout(() => triggerConfetti(), 200);
+        return;
       }
+
+      if (navigator.vibrate) navigator.vibrate(10);
+
+      const el = numberElRef.current;
+      if (el) {
+        // Reset to start position (below)
+        el.style.transition = 'none';
+        el.style.transform = 'translateY(60px)';
+        el.style.opacity = '0';
+        el.textContent = String(numbers[index]);
+
+        // Enter animation
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            el.style.transition = 'transform 0.45s ease-out, opacity 0.45s ease-out';
+            el.style.transform = 'translateY(0px)';
+            el.style.opacity = '1';
+          });
+        });
+
+        // Start exit animation after 700ms
+        setTimeout(() => {
+          el.style.transition = 'transform 0.35s ease-in, opacity 0.35s ease-in';
+          el.style.transform = 'translateY(-80px)';
+          el.style.opacity = '0';
+        }, 700);
+      }
+
+      index++;
+      // Next number starts exactly when exit begins (at 700ms mark)
+      setTimeout(showNext, 700);
     };
 
-    const delay = (ms: number) => new Promise<void>(resolve => {
-      const start = Date.now();
-      const check = () => {
-        if (countdownAbortRef.current) return;
-        if (isPausedRef.current) { requestAnimationFrame(check); return; }
-        if (Date.now() - start >= ms) resolve();
-        else requestAnimationFrame(check);
-      };
-      check();
-    });
-
-    for (const num of [3, 2, 1] as const) {
-      if (countdownAbortRef.current) return;
-      await waitWhilePaused();
-
-      setCurrentNumber(num);
-      navigator.vibrate?.(10);
-
-      // Wait for ref to be available
-      await new Promise(r => requestAnimationFrame(r));
-      const el = numberElRef.current;
-      if (!el) continue;
-
-      // Entrance: slide up from below
-      const enterAnim = el.animate(
-        [
-          { transform: 'translateY(100%)', opacity: '1' },
-          { transform: 'translateY(0%)', opacity: '1' },
-        ],
-        { duration: 280, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }
-      );
-      await enterAnim.finished;
-
-      // Hold
-      await delay(1400);
-      await waitWhilePaused();
-
-      // Exit: slide up out
-      const exitAnim = el.animate(
-        [
-          { transform: 'translateY(0%)', opacity: '1' },
-          { transform: 'translateY(-100%)', opacity: '1' },
-        ],
-        { duration: 280, easing: 'cubic-bezier(0.4, 0, 0.2, 1)', fill: 'forwards' }
-      );
-      await exitAnim.finished;
-    }
-
-    if (countdownAbortRef.current) return;
-    setCurrentNumber(null);
-    setCountdownPhase('done');
-    await new Promise(r => setTimeout(r, 200));
-    triggerConfetti();
+    showNext();
   }, [triggerConfetti]);
 
   // === Handle START click — circular reveal then countdown ===
@@ -292,6 +238,13 @@ const Index = () => {
     const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
     const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
 
+    // Fix 2: Hide Section 1 immediately when reveal starts
+    const sectionHook = document.getElementById('section-hook');
+    if (sectionHook) {
+      sectionHook.style.opacity = '0';
+      sectionHook.style.pointerEvents = 'none';
+    }
+
     const overlay = revealOverlayRef.current;
     if (overlay) {
       overlay.style.zIndex = '300';
@@ -305,21 +258,23 @@ const Index = () => {
           { clipPath: `circle(150vmax at ${cx}px ${cy}px)` },
         ],
         {
-          duration: 800,
+          duration: 1400, // Fix 3: slower reveal
           easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
           fill: 'forwards',
         }
       );
 
+      // Fix 2: Switch to section 2 immediately after animation starts
+      setCurrentSection(2);
+
       await anim.finished;
 
-      // Retire overlay instantly
+      // Retire overlay
       overlay.style.pointerEvents = 'none';
       overlay.style.zIndex = '-1';
       overlay.style.opacity = '0';
     }
 
-    setCurrentSection(2);
     countdownAbortRef.current = false;
 
     // Wait for React to paint Section 2 DOM before starting countdown
@@ -349,18 +304,14 @@ const Index = () => {
     <>
       {/* Section 2 — always in DOM behind Section 1 */}
       <div className={`section-two${currentSection === 2 ? ' is-active' : ''}`} aria-live="polite">
-        {countdownPhase === 'running' && currentNumber && (
-          <div className="countdown-mask">
-            <span
-              ref={numberElRef}
-              className="countdown-number"
-              aria-label={`${currentNumber}`}
-              style={{ transform: 'translateY(100%)' }}
-            >
-              {currentNumber}
-            </span>
-          </div>
-        )}
+        {/* Countdown mask always in DOM for imperative animation */}
+        <div className="countdown-mask">
+          <span
+            ref={numberElRef}
+            className="countdown-number"
+            aria-label="countdown"
+          />
+        </div>
         {showConfetti && (
           <canvas
             ref={confettiCanvasRef}
@@ -375,6 +326,7 @@ const Index = () => {
       {/* Section 1 — on top */}
       {currentSection === 1 && (
         <div
+          id="section-hook"
           style={{
             position: "fixed",
             inset: 0,
@@ -460,7 +412,7 @@ const Index = () => {
             اقلبي تلفونك يا باتمانه
           </p>
 
-          {/* START button */}
+          {/* START button — Fix 1: Open Sans 500 */}
           <button
             ref={startBtnRef}
             className="start-btn"
@@ -469,7 +421,7 @@ const Index = () => {
               padding: "12px 36px",
               backdropFilter: "blur(12px)",
               WebkitBackdropFilter: "blur(12px)",
-              fontFamily: "'BatmanaMedium', sans-serif",
+              fontFamily: "'Open Sans', sans-serif",
               fontSize: "16px",
               fontWeight: 500,
               color: "#FF13F0",
