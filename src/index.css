@@ -359,7 +359,7 @@
 .reveal-overlay {
   position: fixed;
   inset: 0;
-  z-index: -1;
+  z-index: 150;
   background: #ffb7fa;
   opacity: 0;
   pointer-events: none;
@@ -379,12 +379,6 @@
   box-shadow: none;
   -webkit-mask-image: none;
   isolation: isolate;
-  
-  visibility: hidden;
-}
-
-.font-ready .countdown-mask {
-  visibility: visible;
 }
 
 .countdown-mask::before,
