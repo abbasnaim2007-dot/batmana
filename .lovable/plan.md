@@ -1,34 +1,28 @@
 
 
-## Critical Bug Fix: Pink Screen on Load + Asset Refresh
+## 5 Fixes: Button Font, Section 1 Flash, Reveal Speed, Countdown Animation, Confetti
 
-### Root Cause
+### Fix 1 — START Button Font
+- **`src/index.css` line 17**: Add `@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@500&display=swap');` alongside existing Google Fonts import
+- **`src/pages/Index.tsx` line 472**: Change `fontFamily` from `'BatmanaMedium', sans-serif` to `'Open Sans', sans-serif`
 
-`.section-two` has `z-index: 200` and `background: #ffb7fa`, sitting **above** Section 1 at `z-index: 100`. It renders immediately, covering everything with a pink screen.
+### Fix 2 — Section 1 Flash After Reveal
+- **`src/pages/Index.tsx` ~line 300** (inside `handleStart`, right after setting `overlay.style.clipPath`): Add a state update or direct DOM hide of Section 1 container at animation start, not after `await anim.finished`. Since Section 1 is conditionally rendered via `currentSection === 1`, we move `setCurrentSection(2)` to fire immediately after the clip-path animation begins (not after it finishes). This hides Section 1 behind the expanding overlay so when the overlay retires, Section 2 is already showing.
 
-### Fix
+Concretely: move `setCurrentSection(2)` from line 322 to right after the `overlay.animate()` call (line 312), before `await anim.finished`.
 
-**`src/index.css`** — 2 edits:
+### Fix 3 — Reveal Duration 800ms → 1400ms
+- **`src/pages/Index.tsx` line 308**: Change `duration: 800` to `duration: 1400`
 
-1. `.section-two`: Add `opacity: 0; pointer-events: none;` as default hidden state, keep `z-index: 200`
-2. Add `.section-two.is-active` rule: `opacity: 1; pointer-events: all;`
+### Fix 4 — Countdown Animation Rewrite
+- **`src/pages/Index.tsx`**: Replace `runCountdown` (lines 216-281) with new logic using translateY(60px) enter and translateY(-80px) exit, with 0.45s/0.35s durations, 700ms overlap timing. Use Web Animations API (consistent with existing pattern) but with the new values.
+- **`src/index.css`**: Update `.countdown-mask` (lines 370-386) to have `overflow: visible; background: transparent;` and remove fixed width/height. Update `.countdown-number` (lines 397-414) to use `color: #ffb7fa`, remove text-shadow, set initial `transform: translateY(60px); opacity: 0;`.
+- **`src/pages/Index.tsx` JSX**: Remove the conditional `countdownPhase === 'running' && currentNumber &&` wrapper so the countdown element stays in DOM for imperative animation. Show the countdown-mask always when section 2 is active.
 
-**`src/pages/Index.tsx`** — 2 edits:
+### Fix 5 — Stronger Confetti
+- **`src/pages/Index.tsx`**: Replace `triggerConfetti` (lines 126-213) with the user's stronger version: 300 particles, wider velocity range, lower gravity (0.25), rotation, rectangular shapes. Adapt to existing React refs pattern (use `confettiCanvasRef.current` instead of `document.getElementById`).
 
-1. On the `.section-two` div, conditionally add `is-active` class when `currentSection === 2`:
-   ```tsx
-   <div className={`section-two${currentSection === 2 ? ' is-active' : ''}`}>
-   ```
-2. Remove the `setCurrentSection(2)` guard on Section 1 rendering — Section 1 stays in DOM but is naturally behind the overlay/section-two stack. (Or keep as-is since Section 1 unmounts when `currentSection !== 1`, which is fine.)
-
-### Asset Copies
-
-- `user-uploads://Articulat_CF_Demi_Bold-4.ttf` → `public/fonts/Articulat_CF_Demi_Bold.ttf`
-- `user-uploads://The_Year_of_The_Camel_Medium-4.otf` → `public/fonts/The_Year_of_The_Camel_Medium.otf`
-- `user-uploads://mixkit-long-pop-2358-5.wav` → `public/sounds/mixkit-long-pop-2358.wav`
-
-### What stays unchanged
-- All transition logic in `handleStart` (overlay activation, clip-path animation, teardown, rAF wait, `runCountdown()`)
-- Countdown, confetti, orientation guard logic
-- Z-index values for overlay, confetti canvas, orientation guard
+### Files changed
+- `src/index.css` — Google Fonts import, countdown-mask, countdown-number styles
+- `src/pages/Index.tsx` — handleStart timing, runCountdown rewrite, triggerConfetti rewrite, button font
 
