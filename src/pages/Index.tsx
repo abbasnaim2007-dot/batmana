@@ -302,27 +302,6 @@ const Index = () => {
 
   return (
     <>
-      {/* Section 2 — always in DOM behind Section 1 */}
-      <div className={`section-two${currentSection === 2 ? ' is-active' : ''}`} aria-live="polite">
-        {/* Countdown mask always in DOM for imperative animation */}
-        <div className="countdown-mask">
-          <span
-            ref={numberElRef}
-            className="countdown-number"
-            aria-label="countdown"
-          />
-        </div>
-        {showConfetti && (
-          <canvas
-            ref={confettiCanvasRef}
-            style={{ position: 'fixed', inset: 0, zIndex: 500, pointerEvents: 'none' }}
-          />
-        )}
-      </div>
-
-      {/* Reveal overlay for circular wipe */}
-      <div ref={revealOverlayRef} className="reveal-overlay" />
-
       {/* Section 1 — on top */}
       {currentSection === 1 && (
         <div
@@ -412,7 +391,7 @@ const Index = () => {
             اقلبي تلفونك يا باتمانه
           </p>
 
-          {/* START button — Fix 1: Open Sans 500 */}
+          {/* START button */}
           <button
             ref={startBtnRef}
             className="start-btn"
@@ -447,6 +426,27 @@ const Index = () => {
           <div className="hook-gradient" />
         </div>
       )}
+
+      {/* Reveal overlay for circular wipe */}
+      <div ref={revealOverlayRef} className="reveal-overlay" />
+
+      {/* Section 2 — always in DOM */}
+      <div className={`section-two${currentSection === 2 ? ' is-active' : ''}`} aria-live="polite">
+        {/* Countdown mask always in DOM for imperative animation */}
+        <div className="countdown-mask">
+          <span
+            ref={numberElRef}
+            className="countdown-number"
+            aria-label="countdown"
+          />
+        </div>
+        {showConfetti && (
+          <canvas
+            ref={confettiCanvasRef}
+            style={{ position: 'fixed', inset: 0, zIndex: 500, pointerEvents: 'none' }}
+          />
+        )}
+      </div>
 
       {/* Orientation guard — Section 2+ only */}
       {currentSection >= 2 && isPortrait && (
