@@ -274,7 +274,7 @@ const Index = () => {
       setTimeout(() => {
         if (pink) pink.style.pointerEvents = 'none';
         runCountdown();
-      }, 350);
+      }, 50);
     }, 1250);
   }, [runCountdown]);
 
