@@ -109,68 +109,78 @@ const Index = () => {
     }));
   }, [isPortrait]);
 
-  // === Canvas Confetti (Fix 5 — stronger & slower) ===
-  const triggerConfetti = useCallback(() => {
-    setShowConfetti(true);
+  // === Canvas Confetti ===
+  const fireConfetti = useCallback(() => {
     navigator.vibrate?.([30, 50, 30]);
 
-    requestAnimationFrame(() => {
-      const canvas = confettiCanvasRef.current;
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+    const canvas = document.getElementById('confetti-canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+    canvas.style.display = 'block';
+    const ctx = canvas.getContext('2d')!;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+    const colors = [
+      '#FFD700', '#FFC200', '#FFE566',
+      '#FFFFFF', '#F0F0FF',
+      '#00FFFF', '#00E5FF', '#18FFFF',
+      '#E040FB', '#CE93D8', '#AA00FF',
+    ];
 
-      const colors = ['#ffb7fa', '#ffffff', '#f7c6ff', '#e040fb', '#ff80ff', '#fce4ff', '#ffccff'];
-
-      const particles = Array.from({ length: 300 }, (_, i) => ({
-        x: i < 150 ? 0 : canvas.width,
+    const particles = Array.from({ length: 400 }, (_, i) => {
+      const fromLeft = i < 200;
+      const angle = fromLeft
+        ? (Math.random() * 70 + 20) * (Math.PI / 180)
+        : (Math.PI - (Math.random() * 70 + 20) * (Math.PI / 180));
+      const speed = Math.random() * 20 + 12;
+      return {
+        x: fromLeft ? 0 : canvas.width,
         y: canvas.height,
-        vx: i < 150
-          ? Math.random() * 14 + 5
-          : -(Math.random() * 14 + 5),
-        vy: -(Math.random() * 22 + 10),
+        vx: Math.cos(angle) * speed,
+        vy: -Math.abs(Math.sin(angle) * speed),
         color: colors[Math.floor(Math.random() * colors.length)],
-        size: Math.random() * 10 + 5,
-        gravity: 0.25,
+        width: Math.random() * 14 + 6,
+        height: Math.random() * 7 + 4,
         rotation: Math.random() * 360,
-        rotationSpeed: (Math.random() - 0.5) * 6,
-      }));
-
-      const animate = () => {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        let alive = false;
-
-        for (const p of particles) {
-          p.x += p.vx;
-          p.y += p.vy;
-          p.vy += p.gravity;
-          p.vx *= 0.995;
-          p.rotation += p.rotationSpeed;
-
-          if (p.y < canvas.height + 30) {
-            alive = true;
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            ctx.rotate((p.rotation * Math.PI) / 180);
-            ctx.fillStyle = p.color;
-            ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.5);
-            ctx.restore();
-          }
-        }
-
-        if (alive) {
-          confettiRafRef.current = requestAnimationFrame(animate);
-        } else {
-          setShowConfetti(false);
-          console.log("Ready for Section 3");
-        }
+        rotationSpeed: (Math.random() - 0.5) * 8,
+        gravity: 0.28,
+        drag: 0.994,
+        opacity: 1,
       };
-
-      confettiRafRef.current = requestAnimationFrame(animate);
     });
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      let alive = false;
+
+      for (const p of particles) {
+        p.x += p.vx;
+        p.y += p.vy;
+        p.vy += p.gravity;
+        p.vx *= p.drag;
+        p.rotation += p.rotationSpeed;
+
+        if (p.y > canvas.height * 0.85) {
+          p.opacity -= 0.02;
+        }
+
+        if (p.y < canvas.height + 40 && p.opacity > 0) {
+          alive = true;
+          ctx.save();
+          ctx.globalAlpha = p.opacity;
+          ctx.translate(p.x, p.y);
+          ctx.rotate((p.rotation * Math.PI) / 180);
+          ctx.fillStyle = p.color;
+          ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
+          ctx.restore();
+        }
+      }
+
+      if (alive) requestAnimationFrame(animate);
+      else canvas.style.display = 'none';
+    };
+
+    requestAnimationFrame(animate);
   }, []);
 
   // === Countdown Animation (Fix 4 — smooth translateY enter/exit) ===
