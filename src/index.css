@@ -346,25 +346,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  opacity: 0;
+  clip-path: circle(0% at 50% 50%);
   pointer-events: none;
+  will-change: clip-path;
 }
 
 .section-two.is-active {
-  opacity: 1;
   pointer-events: all;
-}
-
-/* Reveal overlay for circular wipe */
-.reveal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 150;
-  background: #ffb7fa;
-  opacity: 0;
-  pointer-events: none;
-  will-change: clip-path;
-  clip-path: circle(0% at 50% 50%);
 }
 
 .countdown-mask {

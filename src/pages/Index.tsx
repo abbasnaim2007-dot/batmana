@@ -17,7 +17,7 @@ const Index = () => {
   const popSoundRef = useRef<HTMLAudioElement | null>(null);
   const startBtnRef = useRef<HTMLButtonElement | null>(null);
   const isPausedRef = useRef(false);
-  const revealOverlayRef = useRef<HTMLDivElement | null>(null);
+  
   const numberElRef = useRef<HTMLSpanElement | null>(null);
   const confettiCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const countdownAbortRef = useRef(false);
@@ -227,59 +227,46 @@ const Index = () => {
   }, [triggerConfetti]);
 
   // === Handle START click — circular reveal then countdown ===
-  const handleStart = useCallback(async () => {
-    if (popSoundRef.current) {
-      popSoundRef.current.currentTime = 0;
-      popSoundRef.current.play().catch(() => {});
+  const handleStart = useCallback(() => {
+    // Play sound
+    const audio = new Audio('/sounds/mixkit-long-pop-2358.wav');
+    audio.play().catch(() => {});
+
+    // Hide section 1 immediately
+    const hook = document.querySelector('#section-hook') as HTMLElement;
+    if (hook) {
+      hook.style.opacity = '0';
+      hook.style.pointerEvents = 'none';
     }
 
-    const btn = startBtnRef.current;
+    // Get button position for reveal origin
+    const btn = document.querySelector('.start-btn') as HTMLElement;
     const rect = btn?.getBoundingClientRect();
     const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
     const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
+    const xPercent = (cx / window.innerWidth) * 100;
+    const yPercent = (cy / window.innerHeight) * 100;
 
-    // Fix 2: Hide Section 1 immediately when reveal starts
-    const sectionHook = document.getElementById('section-hook');
-    if (sectionHook) {
-      sectionHook.style.opacity = '0';
-      sectionHook.style.pointerEvents = 'none';
+    // Activate section-two and animate clip-path
+    const sectionTwo = document.querySelector('.section-two') as HTMLElement;
+    if (sectionTwo) {
+      sectionTwo.classList.add('is-active');
+      sectionTwo.style.clipPath = `circle(0% at ${xPercent}% ${yPercent}%)`;
+      sectionTwo.style.transition = 'none';
+
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          sectionTwo.style.transition = 'clip-path 1.4s ease-in-out';
+          sectionTwo.style.clipPath = `circle(150% at ${xPercent}% ${yPercent}%)`;
+        });
+      });
     }
 
-    const overlay = revealOverlayRef.current;
-    if (overlay) {
-      
-      overlay.style.opacity = '1';
-      overlay.style.pointerEvents = 'all';
-      overlay.style.clipPath = `circle(0% at ${cx}px ${cy}px)`;
-
-      const anim = overlay.animate(
-        [
-          { clipPath: `circle(0% at ${cx}px ${cy}px)` },
-          { clipPath: `circle(150vmax at ${cx}px ${cy}px)` },
-        ],
-        {
-          duration: 1400, // Fix 3: slower reveal
-          easing: 'cubic-bezier(0.4, 0, 0.2, 1)',
-          fill: 'forwards',
-        }
-      );
-
-      // Fix 2: Switch to section 2 immediately after animation starts
-      setCurrentSection(2);
-
-      await anim.finished;
-
-      // Retire overlay
-      overlay.style.pointerEvents = 'none';
-      
-      overlay.style.opacity = '0';
-    }
-
-    countdownAbortRef.current = false;
-
-    // Wait for React to paint Section 2 DOM before starting countdown
-    await new Promise(r => requestAnimationFrame(r));
-    runCountdown();
+    // After reveal completes, start countdown
+    setCurrentSection(2);
+    setTimeout(() => {
+      runCountdown();
+    }, 1500);
   }, [runCountdown]);
 
   // Orientation guard: pause/resume countdown in Section 2
@@ -303,7 +290,7 @@ const Index = () => {
   return (
     <>
       {/* Section 1 — on top */}
-      {currentSection === 1 && (
+      {(
         <div
           id="section-hook"
           style={{
@@ -427,11 +414,8 @@ const Index = () => {
         </div>
       )}
 
-      {/* Reveal overlay for circular wipe */}
-      <div ref={revealOverlayRef} className="reveal-overlay" />
-
       {/* Section 2 — always in DOM */}
-      <div className={`section-two${currentSection === 2 ? ' is-active' : ''}`} aria-live="polite">
+      <div className="section-two" aria-live="polite">
         {/* Countdown mask always in DOM for imperative animation */}
         <div className="countdown-mask">
           <span
