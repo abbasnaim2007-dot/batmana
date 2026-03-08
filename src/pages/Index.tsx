@@ -215,12 +215,12 @@ const Index = () => {
           el.style.transition = 'transform 0.35s ease-in, opacity 0.35s ease-in';
           el.style.transform = 'translateY(-80px)';
           el.style.opacity = '0';
-        }, 700);
+        }, 1200);
       }
 
       index++;
-      // Next number starts exactly when exit begins (at 700ms mark)
-      setTimeout(showNext, 700);
+      // Next number starts exactly when exit begins (at 1200ms mark)
+      setTimeout(showNext, 1200);
     };
 
     showNext();

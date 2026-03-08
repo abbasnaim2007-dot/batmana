@@ -398,7 +398,7 @@ body {
 }
 
 @media (max-width: 768px) {
-  .countdown-number { font-size: 120px; }
+  .countdown-number { font-size: 30vw; }
 }
 
 .countdown-number::before,
