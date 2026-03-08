@@ -298,7 +298,6 @@ const Index = () => {
   useEffect(() => {
     return () => {
       countdownAbortRef.current = true;
-      if (confettiRafRef.current) cancelAnimationFrame(confettiRafRef.current);
     };
   }, []);
 
