@@ -229,7 +229,7 @@ const Index = () => {
   // === Handle START click — circular reveal then countdown ===
   const handleStart = useCallback(() => {
     // 1. Play sound
-    const audio = new Audio('/sounds/mixkit-long-pop-2358.wav');
+    const audio = new Audio('/sounds/mixkit-long-pop-2358.mp3');
     audio.play().catch(() => {});
 
     // 2. Get button position
