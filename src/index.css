@@ -20,9 +20,6 @@
 @tailwind components;
 @tailwind utilities;
 
-body {
-  background: #000000;
-}
 
 @layer base {
   :root {
