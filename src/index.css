@@ -20,6 +20,10 @@
 @tailwind components;
 @tailwind utilities;
 
+body {
+  background: #000000;
+}
+
 @layer base {
   :root {
     --background: 210 17% 98%;
