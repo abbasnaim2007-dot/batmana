@@ -343,17 +343,29 @@
   position: fixed;
   inset: 0;
   background: #ffb7fa;
-  z-index: 200;
+  z-index: 100;
   display: flex;
   align-items: center;
   justify-content: center;
-  clip-path: circle(0% at 50% 50%);
+  opacity: 0;
   pointer-events: none;
-  will-change: clip-path;
+  clip-path: none !important;
+  transition: none;
 }
 
 .section-two.is-active {
+  opacity: 1;
   pointer-events: all;
+}
+
+#pink-reveal {
+  position: fixed;
+  inset: 0;
+  background: #ffb7fa;
+  z-index: 999;
+  clip-path: circle(0% at 50% 50%);
+  pointer-events: none;
+  will-change: clip-path;
 }
 
 .countdown-mask {

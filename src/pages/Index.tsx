@@ -441,6 +441,9 @@ const Index = () => {
         )}
       </div>
 
+      {/* Pink circular reveal overlay */}
+      <div id="pink-reveal" />
+
       {/* Orientation guard — Section 2+ only */}
       {currentSection >= 2 && isPortrait && (
         <div className="orientation-guard">
