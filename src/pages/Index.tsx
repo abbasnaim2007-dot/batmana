@@ -271,10 +271,8 @@ const Index = () => {
         pink.style.opacity = '0';
       }
 
-      setTimeout(() => {
-        if (pink) pink.style.pointerEvents = 'none';
-        runCountdown();
-      }, 0);
+      if (pink) pink.style.pointerEvents = 'none';
+      runCountdown();
     }, 1250);
   }, [runCountdown]);
 
