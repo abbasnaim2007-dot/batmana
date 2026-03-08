@@ -19,9 +19,7 @@ const Index = () => {
   const isPausedRef = useRef(false);
   
   const numberElRef = useRef<HTMLSpanElement | null>(null);
-  const confettiCanvasRef = useRef<HTMLCanvasElement | null>(null);
   const countdownAbortRef = useRef(false);
-  const confettiRafRef = useRef<number | null>(null);
 
   useEffect(() => { isPausedRef.current = isPaused; }, [isPaused]);
 
