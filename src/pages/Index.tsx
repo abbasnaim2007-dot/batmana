@@ -228,45 +228,54 @@ const Index = () => {
 
   // === Handle START click — circular reveal then countdown ===
   const handleStart = useCallback(() => {
-    // Play sound
+    // 1. Play sound
     const audio = new Audio('/sounds/mixkit-long-pop-2358.wav');
     audio.play().catch(() => {});
 
-    // Hide section 1 immediately
-    const hook = document.querySelector('#section-hook') as HTMLElement;
-    if (hook) {
-      hook.style.opacity = '0';
-      hook.style.pointerEvents = 'none';
-    }
-
-    // Get button position for reveal origin
+    // 2. Get button position
     const btn = document.querySelector('.start-btn') as HTMLElement;
     const rect = btn?.getBoundingClientRect();
     const cx = rect ? rect.left + rect.width / 2 : window.innerWidth / 2;
     const cy = rect ? rect.top + rect.height / 2 : window.innerHeight / 2;
-    const xPercent = (cx / window.innerWidth) * 100;
-    const yPercent = (cy / window.innerHeight) * 100;
+    const xPct = (cx / window.innerWidth) * 100;
+    const yPct = (cy / window.innerHeight) * 100;
 
-    // Activate section-two and animate clip-path
-    const sectionTwo = document.querySelector('.section-two') as HTMLElement;
-    if (sectionTwo) {
-      sectionTwo.classList.add('is-active');
-      sectionTwo.style.clipPath = `circle(0% at ${xPercent}% ${yPercent}%)`;
-      sectionTwo.style.transition = 'none';
+    // 3. Start pink reveal OVER section-one
+    const pink = document.getElementById('pink-reveal');
+    if (pink) {
+      pink.style.clipPath = `circle(0% at ${xPct}% ${yPct}%)`;
+      pink.style.pointerEvents = 'all';
 
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          sectionTwo.style.transition = 'clip-path 1.4s ease-in-out';
-          sectionTwo.style.clipPath = `circle(150% at ${xPercent}% ${yPercent}%)`;
+          pink.style.transition = 'clip-path 1.2s ease-in-out';
+          pink.style.clipPath = `circle(150% at ${xPct}% ${yPct}%)`;
         });
       });
     }
 
-    // After reveal completes, start countdown
+    // 4. When pink fully covers screen → hide section-one, show section-two
     setCurrentSection(2);
     setTimeout(() => {
-      runCountdown();
-    }, 1500);
+      const hook = document.getElementById('section-hook') as HTMLElement;
+      if (hook) {
+        hook.style.opacity = '0';
+        hook.style.pointerEvents = 'none';
+      }
+
+      const sectionTwo = document.querySelector('.section-two') as HTMLElement;
+      if (sectionTwo) sectionTwo.classList.add('is-active');
+
+      if (pink) {
+        pink.style.transition = 'opacity 0.3s ease-out';
+        pink.style.opacity = '0';
+      }
+
+      setTimeout(() => {
+        if (pink) pink.style.pointerEvents = 'none';
+        runCountdown();
+      }, 350);
+    }, 1250);
   }, [runCountdown]);
 
   // Orientation guard: pause/resume countdown in Section 2
