@@ -195,7 +195,7 @@ const Index = () => {
     const showNext = () => {
       if (index >= numbers.length) {
         setCountdownPhase('done');
-        setTimeout(() => triggerConfetti(), 200);
+        setTimeout(() => fireConfetti(), 200);
         return;
       }
 
