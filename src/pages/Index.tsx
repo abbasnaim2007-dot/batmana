@@ -232,7 +232,7 @@ const Index = () => {
     };
 
     showNext();
-  }, [triggerConfetti]);
+  }, [fireConfetti]);
 
   // === Handle START click — circular reveal then countdown ===
   const handleStart = useCallback(() => {
