@@ -383,6 +383,8 @@ body {
   font-size: 200px;
   font-weight: 600;
   color: #ffffff;
+  text-shadow: 0 0 40px rgba(255, 183, 250, 0.9),
+               0 0 80px rgba(255, 183, 250, 0.5);
   line-height: 1;
   opacity: 0;
   transform: translateY(60px);
