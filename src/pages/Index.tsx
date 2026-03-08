@@ -11,7 +11,7 @@ const Index = () => {
   const [currentSection, setCurrentSection] = useState<1 | 2>(1);
   const [countdownPhase, setCountdownPhase] = useState<CountdownPhase>('idle');
   const [isPaused, setIsPaused] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
+  
 
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const popSoundRef = useRef<HTMLAudioElement | null>(null);
