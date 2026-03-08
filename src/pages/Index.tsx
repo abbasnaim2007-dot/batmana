@@ -438,12 +438,10 @@ const Index = () => {
             aria-label="countdown"
           />
         </div>
-        {showConfetti && (
-          <canvas
-            ref={confettiCanvasRef}
-            style={{ position: 'fixed', inset: 0, zIndex: 500, pointerEvents: 'none' }}
-          />
-        )}
+        <canvas
+          id="confetti-canvas"
+          style={{ position: 'fixed', inset: 0, zIndex: 500, pointerEvents: 'none', display: 'none' }}
+        />
       </div>
 
       {/* Pink circular reveal overlay */}
