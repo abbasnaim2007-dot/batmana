@@ -247,7 +247,7 @@ const Index = () => {
 
     const overlay = revealOverlayRef.current;
     if (overlay) {
-      overlay.style.zIndex = '300';
+      
       overlay.style.opacity = '1';
       overlay.style.pointerEvents = 'all';
       overlay.style.clipPath = `circle(0% at ${cx}px ${cy}px)`;
@@ -271,7 +271,7 @@ const Index = () => {
 
       // Retire overlay
       overlay.style.pointerEvents = 'none';
-      overlay.style.zIndex = '-1';
+      
       overlay.style.opacity = '0';
     }
 
