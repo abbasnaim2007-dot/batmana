@@ -281,7 +281,7 @@ const Index = () => {
 
       if (pink) pink.style.pointerEvents = 'none';
       runCountdown();
-    }, 1250);
+    }, 1200);
   }, [runCountdown]);
 
   // Orientation guard: pause/resume countdown in Section 2
