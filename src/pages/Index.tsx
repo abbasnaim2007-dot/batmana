@@ -111,6 +111,9 @@ const Index = () => {
 
   // === Canvas Confetti ===
   const fireConfetti = useCallback(() => {
+    const confettiAudio = new Audio('/sounds/Confetti_Sound.mp3');
+    confettiAudio.play().catch(() => {});
+
     navigator.vibrate?.([30, 50, 30]);
 
     const canvas = document.getElementById('confetti-canvas') as HTMLCanvasElement;
