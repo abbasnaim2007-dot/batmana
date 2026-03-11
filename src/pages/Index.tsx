@@ -2,6 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import batmanLogo from "@/assets/batman-logo.png";
 import pookieBatman from "@/assets/pookie_batman.jpg";
 
+const popAudio = new Audio('/sounds/mixkit-long-pop-2358.mp3');
+popAudio.preload = 'auto';
+
+const confettiAudio = new Audio('/sounds/Confetti_Sound.mp3');
+confettiAudio.preload = 'auto';
+
 type CountdownPhase = 'idle' | 'running' | 'done';
 
 const Index = () => {
@@ -14,7 +20,7 @@ const Index = () => {
   
 
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const popSoundRef = useRef<HTMLAudioElement | null>(null);
+  
   const startBtnRef = useRef<HTMLButtonElement | null>(null);
   const isPausedRef = useRef(false);
   
@@ -32,10 +38,8 @@ const Index = () => {
 
   // Audio preload
   useEffect(() => {
-    const audio = new Audio("/sounds/mixkit-long-pop-2358.mp3");
-    audio.preload = "auto";
-    audio.load();
-    popSoundRef.current = audio;
+    popAudio.load();
+    confettiAudio.load();
   }, []);
 
   // Orientation tracking
@@ -111,7 +115,7 @@ const Index = () => {
 
   // === Canvas Confetti ===
   const fireConfetti = useCallback(() => {
-    const confettiAudio = new Audio('/sounds/Confetti_Sound.mp3');
+    confettiAudio.currentTime = 0;
     confettiAudio.play().catch(() => {});
 
     navigator.vibrate?.([30, 50, 30]);
@@ -240,8 +244,8 @@ const Index = () => {
   // === Handle START click — circular reveal then countdown ===
   const handleStart = useCallback(() => {
     // 1. Play sound
-    const audio = new Audio('/sounds/mixkit-long-pop-2358.mp3');
-    audio.play().catch(() => {});
+    popAudio.currentTime = 0;
+    popAudio.play().catch(() => {});
 
     // 2. Get button position
     const btn = document.querySelector('.start-btn') as HTMLElement;
