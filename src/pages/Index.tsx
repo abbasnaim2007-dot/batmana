@@ -20,7 +20,7 @@ const Index = () => {
   
 
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const popSoundRef = useRef<HTMLAudioElement | null>(null);
+  
   const startBtnRef = useRef<HTMLButtonElement | null>(null);
   const isPausedRef = useRef(false);
   
