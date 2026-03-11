@@ -2,6 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import batmanLogo from "@/assets/batman-logo.png";
 import pookieBatman from "@/assets/pookie_batman.jpg";
 
+const popAudio = new Audio('/sounds/mixkit-long-pop-2358.mp3');
+popAudio.preload = 'auto';
+
+const confettiAudio = new Audio('/sounds/Confetti_Sound.mp3');
+confettiAudio.preload = 'auto';
+
 type CountdownPhase = 'idle' | 'running' | 'done';
 
 const Index = () => {
