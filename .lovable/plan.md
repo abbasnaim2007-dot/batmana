@@ -1,34 +1,25 @@
+## Add Section 3: The Grand Finale
 
+After the confetti finishes in Section 2, reveal a new pink Section 3 with falling flowers and a handwritten "Happy Birthday Tasnem" SVG animation.
 
-## Critical Bug Fix: Pink Screen on Load + Asset Refresh
+### Files
 
-### Root Cause
+**1. `public/flowers/flower.png`** — copy uploaded `image_ab8341.png` here.
 
-`.section-two` has `z-index: 200` and `background: #ffb7fa`, sitting **above** Section 1 at `z-index: 100`. It renders immediately, covering everything with a pink screen.
+**2. `src/index.css`** — append:
+- `@import` for Google Font `Sacramento` (add near other font imports at top).
+- `.section-three` / `.section-three.is-active` (fixed overlay, z-index 300, pink `#ffb7fa`, opacity toggle).
+- `.flower` and `.flower-back` (two layers of falling flower divs using `/flowers/flower.png`).
+- `@keyframes flowerFall` (translateY -80px → 110vh with rotate 720deg).
+- `.birthday-svg-container` and SVG text styling (Sacramento, white stroke, stroke-dasharray 2000).
+- `@keyframes writeIn` (handwriting reveal then fill).
+- Mobile media query for smaller flowers and 42px text.
 
-### Fix
+**3. `src/pages/Index.tsx`**:
+- In `fireConfetti`'s animate loop, when `alive` becomes false and the canvas is hidden, also call `showSectionThree()`.
+- Add component-scoped `showSectionThree()` that adds `is-active` to `.section-three`, spawns 12 front + 10 back flower divs with randomized left/duration/delay/size, then after 500ms calls `startHandwritingAnimation()`.
+- Add `startHandwritingAnimation()` that iterates `['Happy','Birthday','Tasnem']`, applying `animation: writeIn 1.5s ease forwards` to each `[data-word="i"]` SVG text element with 1600ms stagger.
+- Add Section 3 JSX right after the `.section-two` block: a `<div className="section-three">` containing `<div className="birthday-svg-container"><svg viewBox="0 0 600 300">` with three `<text data-word="0|1|2">` elements stacked vertically for "Happy", "Birthday", "Tasnem".
 
-**`src/index.css`** — 2 edits:
-
-1. `.section-two`: Add `opacity: 0; pointer-events: none;` as default hidden state, keep `z-index: 200`
-2. Add `.section-two.is-active` rule: `opacity: 1; pointer-events: all;`
-
-**`src/pages/Index.tsx`** — 2 edits:
-
-1. On the `.section-two` div, conditionally add `is-active` class when `currentSection === 2`:
-   ```tsx
-   <div className={`section-two${currentSection === 2 ? ' is-active' : ''}`}>
-   ```
-2. Remove the `setCurrentSection(2)` guard on Section 1 rendering — Section 1 stays in DOM but is naturally behind the overlay/section-two stack. (Or keep as-is since Section 1 unmounts when `currentSection !== 1`, which is fine.)
-
-### Asset Copies
-
-- `user-uploads://Articulat_CF_Demi_Bold-4.ttf` → `public/fonts/Articulat_CF_Demi_Bold.ttf`
-- `user-uploads://The_Year_of_The_Camel_Medium-4.otf` → `public/fonts/The_Year_of_The_Camel_Medium.otf`
-- `user-uploads://mixkit-long-pop-2358-5.wav` → `public/sounds/mixkit-long-pop-2358.wav`
-
-### What stays unchanged
-- All transition logic in `handleStart` (overlay activation, clip-path animation, teardown, rAF wait, `runCountdown()`)
-- Countdown, confetti, orientation guard logic
-- Z-index values for overlay, confetti canvas, orientation guard
-
+### Out of scope
+No changes to Section 1, Section 2 timing, countdown, confetti colors, reveal animation, or audio logic.
