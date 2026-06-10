@@ -184,11 +184,62 @@ const Index = () => {
       }
 
       if (alive) requestAnimationFrame(animate);
-      else canvas.style.display = 'none';
+      else {
+        canvas.style.display = 'none';
+        showSectionThree();
+      }
     };
 
     requestAnimationFrame(animate);
   }, []);
+
+  // === Section 3 — The Grand Finale ===
+  const startHandwritingAnimation = useCallback(() => {
+    const words = ['Happy', 'Birthday', 'Tasnem'];
+    let delay = 0;
+    words.forEach((_, index) => {
+      setTimeout(() => {
+        const textEl = document.querySelector(
+          `[data-word="${index}"]`
+        ) as SVGTextElement | null;
+        if (textEl) {
+          textEl.style.animation = 'writeIn 1.5s ease forwards';
+        }
+      }, delay);
+      delay += 1600;
+    });
+  }, []);
+
+  const showSectionThree = useCallback(() => {
+    const sectionThree = document.querySelector('.section-three') as HTMLElement | null;
+    if (!sectionThree) return;
+    sectionThree.classList.add('is-active');
+
+    for (let i = 0; i < 12; i++) {
+      const flower = document.createElement('div');
+      flower.className = 'flower';
+      flower.style.left = `${Math.random() * 100}%`;
+      flower.style.animationDuration = `${Math.random() * 3 + 4}s`;
+      flower.style.animationDelay = `${Math.random() * 3}s`;
+      const size = Math.random() * 20 + 40;
+      flower.style.width = `${size}px`;
+      flower.style.height = `${size}px`;
+      sectionThree.appendChild(flower);
+    }
+
+    for (let i = 0; i < 10; i++) {
+      const flower = document.createElement('div');
+      flower.className = 'flower-back';
+      flower.style.left = `${Math.random() * 100}%`;
+      flower.style.animationDuration = `${Math.random() * 3 + 6}s`;
+      flower.style.animationDelay = `${Math.random() * 4}s`;
+      sectionThree.appendChild(flower);
+    }
+
+    setTimeout(() => {
+      startHandwritingAnimation();
+    }, 500);
+  }, [startHandwritingAnimation]);
 
   // === Countdown Animation (Fix 4 — smooth translateY enter/exit) ===
   const runCountdown = useCallback(async () => {
@@ -449,6 +500,17 @@ const Index = () => {
           id="confetti-canvas"
           style={{ position: 'fixed', inset: 0, zIndex: 500, pointerEvents: 'none', display: 'none' }}
         />
+      </div>
+
+      {/* Section 3 — The Grand Finale */}
+      <div className="section-three">
+        <div className="birthday-svg-container">
+          <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
+            <text data-word="0" x="300" y="90" textAnchor="middle">Happy</text>
+            <text data-word="1" x="300" y="180" textAnchor="middle">Birthday</text>
+            <text data-word="2" x="300" y="270" textAnchor="middle">Tasnem</text>
+          </svg>
+        </div>
       </div>
 
       {/* Pink circular reveal overlay */}
