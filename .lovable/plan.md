@@ -1,7 +1,24 @@
-## Use local Sacramento font
+Append the missing `.section-three` styles to the end of `src/index.css`:
 
-1. Copy `user-uploads://Sacramento-Regular.ttf` → `public/fonts/Sacramento-Regular.ttf`.
-2. In `src/index.css`, add `@font-face` for Sacramento at the very top (alongside the existing local font-face blocks).
-3. Remove `&family=Sacramento` from the Google Fonts `@import` line.
+```css
+.section-three {
+  position: fixed;
+  inset: 0;
+  background: #ffb7fa;
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.5s ease;
+}
 
-No other changes.
+.section-three.is-active {
+  opacity: 1;
+  pointer-events: all;
+}
+```
+
+No other files or rules will be touched.
