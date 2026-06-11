@@ -468,3 +468,22 @@
   margin: 0;
   text-shadow: 0 2px 8px rgba(255, 19, 240, 0.2);
 }
+
+.section-three {
+  position: fixed;
+  inset: 0;
+  background: #ffb7fa;
+  z-index: 300;
+  opacity: 0;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  transition: opacity 0.5s ease;
+}
+
+.section-three.is-active {
+  opacity: 1;
+  pointer-events: all;
+}
