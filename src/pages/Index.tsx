@@ -195,20 +195,18 @@ const Index = () => {
 
   // === Section 3 — The Grand Finale ===
   const startHandwritingAnimation = useCallback(() => {
-    const words = ['Happy', 'Birthday', 'Tasnem'];
-    let delay = 0;
-    words.forEach((_, index) => {
+    const textEl = document.querySelector('[data-word="0"]') as SVGTextElement | null;
+    if (textEl) {
+      textEl.style.transition = 'stroke-dashoffset 4s ease, fill-opacity 1s ease 3.5s';
+      textEl.style.strokeDashoffset = '0';
       setTimeout(() => {
-        const textEl = document.querySelector(
-          `[data-word="${index}"]`
-        ) as SVGTextElement | null;
-        if (textEl) {
-          textEl.style.animation = 'writeIn 1.5s ease forwards';
-        }
-      }, delay);
-      delay += 1600;
-    });
+        textEl.style.fill = '#ffffff';
+        textEl.style.fillOpacity = '1';
+        textEl.style.strokeOpacity = '0';
+      }, 3500);
+    }
   }, []);
+
 
   const showSectionThree = useCallback(() => {
     const sectionThree = document.querySelector('.section-three') as HTMLElement | null;
@@ -504,14 +502,37 @@ const Index = () => {
 
       {/* Section 3 — The Grand Finale */}
       <div className="section-three">
+        {/* Falling flowers will be added dynamically by showSectionThree() */}
+
+        {/* Birthday SVG Text */}
         <div className="birthday-svg-container">
-          <svg viewBox="0 0 600 300" xmlns="http://www.w3.org/2000/svg">
-            <text data-word="0" x="300" y="90" textAnchor="middle">Happy</text>
-            <text data-word="1" x="300" y="180" textAnchor="middle">Birthday</text>
-            <text data-word="2" x="300" y="270" textAnchor="middle">Tasnem</text>
+          <svg
+            viewBox="0 0 900 120"
+            xmlns="http://www.w3.org/2000/svg"
+            width="100%"
+          >
+            <text
+              x="50%"
+              y="90"
+              textAnchor="middle"
+              data-word="0"
+              style={{
+                fontFamily: "'Sacramento', cursive",
+                fontSize: '80px',
+                fill: 'none',
+                stroke: '#ffffff',
+                strokeWidth: 1.5,
+                strokeDasharray: '3000',
+                strokeDashoffset: '3000',
+                transition: 'none',
+              }}
+            >
+              Happy Birthday Tasnem
+            </text>
           </svg>
         </div>
       </div>
+
 
       {/* Pink circular reveal overlay */}
       <div id="pink-reveal" />
