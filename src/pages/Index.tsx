@@ -196,15 +196,23 @@ const Index = () => {
   // === Section 3 — The Grand Finale ===
   const startHandwritingAnimation = useCallback(() => {
     const textEl = document.querySelector('[data-word="0"]') as SVGTextElement | null;
-    if (textEl) {
-      textEl.style.transition = 'stroke-dashoffset 4s ease, fill-opacity 1s ease 3.5s';
-      textEl.style.strokeDashoffset = '0';
-      setTimeout(() => {
-        textEl.style.fill = '#ffffff';
-        textEl.style.fillOpacity = '1';
-        textEl.style.strokeOpacity = '0';
-      }, 3500);
-    }
+    if (!textEl) return;
+
+    textEl.style.strokeDashoffset = '3000';
+    textEl.style.fill = 'transparent';
+
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        textEl.style.transition = 'stroke-dashoffset 3.5s ease-in-out';
+        textEl.style.strokeDashoffset = '0';
+
+        setTimeout(() => {
+          textEl.style.transition = 'fill 0.5s ease';
+          textEl.style.fill = '#ffffff';
+          textEl.style.stroke = 'transparent';
+        }, 3600);
+      });
+    });
   }, []);
 
 
@@ -507,24 +515,25 @@ const Index = () => {
         {/* Birthday SVG Text */}
         <div className="birthday-svg-container">
           <svg
-            viewBox="0 0 900 120"
+            viewBox="0 0 900 200"
             xmlns="http://www.w3.org/2000/svg"
             width="100%"
+            style={{ overflow: 'visible' }}
           >
             <text
               x="50%"
-              y="90"
+              y="50%"
               textAnchor="middle"
+              dominantBaseline="middle"
               data-word="0"
               style={{
                 fontFamily: "'Sacramento', cursive",
-                fontSize: '80px',
-                fill: 'none',
+                fontSize: '110px',
+                fill: 'transparent',
                 stroke: '#ffffff',
-                strokeWidth: 1.5,
-                strokeDasharray: '3000',
-                strokeDashoffset: '3000',
-                transition: 'none',
+                strokeWidth: 2,
+                strokeDasharray: 3000,
+                strokeDashoffset: 3000,
               }}
             >
               Happy Birthday Tasnem

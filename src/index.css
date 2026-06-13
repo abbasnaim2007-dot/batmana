@@ -487,3 +487,19 @@
   opacity: 1;
   pointer-events: all;
 }
+
+.birthday-svg-container {
+  position: relative;
+  z-index: 320;
+  width: 90%;
+  max-width: 800px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .birthday-svg-container svg text {
+    font-size: 48px;
+  }
+}
