@@ -197,22 +197,10 @@ const Index = () => {
   const startHandwritingAnimation = useCallback(() => {
     const textEl = document.querySelector('[data-word="0"]') as SVGTextElement | null;
     if (!textEl) return;
-
-    textEl.style.strokeDashoffset = '3000';
-    textEl.style.fill = 'transparent';
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        textEl.style.transition = 'stroke-dashoffset 3.5s ease-in-out';
-        textEl.style.strokeDashoffset = '0';
-
-        setTimeout(() => {
-          textEl.style.transition = 'fill 0.5s ease';
-          textEl.style.fill = '#ffffff';
-          textEl.style.stroke = 'transparent';
-        }, 3600);
-      });
-    });
+    textEl.classList.remove('animate');
+    // force reflow so re-adding the class restarts the animation
+    void textEl.getBoundingClientRect();
+    textEl.classList.add('animate');
   }, []);
 
 
@@ -512,7 +500,6 @@ const Index = () => {
       <div className="section-three">
         {/* Falling flowers will be added dynamically by showSectionThree() */}
 
-        {/* Birthday SVG Text */}
         <div className="birthday-svg-container">
           <svg
             viewBox="0 0 900 200"
@@ -525,16 +512,8 @@ const Index = () => {
               y="50%"
               textAnchor="middle"
               dominantBaseline="middle"
+              className="birthday-text"
               data-word="0"
-              style={{
-                fontFamily: "'Sacramento', cursive",
-                fontSize: '110px',
-                fill: 'transparent',
-                stroke: '#ffffff',
-                strokeWidth: 2,
-                strokeDasharray: 3000,
-                strokeDashoffset: 3000,
-              }}
             >
               Happy Birthday Tasnem
             </text>
