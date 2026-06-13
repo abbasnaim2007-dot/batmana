@@ -503,3 +503,28 @@
     font-size: 48px;
   }
 }
+
+@keyframes drawText {
+  from { stroke-dashoffset: 4000; fill-opacity: 0; }
+  70%  { stroke-dashoffset: 0;    fill-opacity: 0; }
+  100% { stroke-dashoffset: 0;    fill-opacity: 1; }
+}
+
+.birthday-text {
+  font-family: 'Sacramento', cursive;
+  font-size: 72px;
+  fill: transparent;
+  stroke: #ffffff;
+  stroke-width: 1px;
+  stroke-dasharray: 4000;
+  stroke-dashoffset: 4000;
+  fill-opacity: 0;
+}
+
+.birthday-text.animate {
+  animation: drawText 4s ease-in-out forwards;
+}
+
+@media (max-width: 768px) {
+  .birthday-text { font-size: 38px; }
+}
